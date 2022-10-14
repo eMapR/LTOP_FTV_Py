@@ -9,29 +9,37 @@ ee.Initialize()
 
 #just use for testing 
 geometry = ee.Geometry.Polygon(
-        [[[104.89306074775232, 16.260851065722026],
-          [104.89306074775232, 16.03924306136429],
-          [105.25011641181482, 16.03924306136429],
-          [105.25011641181482, 16.260851065722026]]])
+        [[[105.75931157311999, 13.350592925813421],
+          [105.75931157311999, 13.211590516861936],
+          [106.03122319421374, 13.211590516861936],
+          [106.03122319421374, 13.350592925813421]]])
 
+#note that its important you set up the place and the imageSource in advance because this will determine
+#your naming conventions going forward. 
 params = {
-    "version": '0.0.1',
-    "place": 'servir_comps_revised',
+    "version": '0.0.2',
+    "place": 'cambodia_subset',
     "startYear": 1990,
     "endYear": 2021,
     "seedSpacing": 10,
-    "randomPts": 20000,
+    "randomPts": 200,
     "imageSource": 'servir',
-    "assetsRoot": 'users/ak_glaciers',
-    #TODO this is going to break if you try to pass a folder that doesn't exist
-    "assetsChild": 'Cambodia_troubleshooting_tc', 
+    "assetsRoot": 'projects/ee-ltop-py/assets/',
+    #the script is going to check if this folder exists and if it doesn't it will make it for you
+    "assetsChild": 'LTOP_full_run', 
     "aoi": geometry,#ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry(),
-    "maxClusters": 5000,
-    "minClusters": 5000,
-    # this has to be uploaded from a local directory and changed
-    "abstract_image_pts": ee.FeatureCollection('users/ak_glaciers/servir_comps_revised_workflow/abstract_image_ids_revised_ids'),
-    "selectedLTparams": ee.FeatureCollection('users/ak_glaciers/servir_comps_revised_workflow/LTOP_servir_comps_revised_kmeans_pts_config_selected_for_GEE_upload_new_weights_gee_implementation'),
+    "maxClusters": 100,
+    "minClusters": 10,
+    # this has to be uploaded from a local directory and changed https://code.earthengine.google.com/?asset=projects/ee-ltop-py/assets/LTOP_testing/abstract_images_grid_points
+    # "abstract_image_pts": ee.FeatureCollection(),
+    "selectedLTparams": ee.FeatureCollection('projects/ee-ltop-py/assets/LTOP_testing/LTOP_Cambodia_troubleshooting_selected_LT_params_tc'),
     "image_source": 'comp',
+    #this should be a local directory 
+    "param_scoring_inputs": "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/output_04_lt_runs/",
+    #TODO this should be explicitly constructed from args so the place name changes
+    "outfile": "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/LTOP_Cambodia_zoomed_tc.csv",
+    "njobs": 8, 
+
     # only needed for medoid composites
     "startDate":'11-20',
     "endDate": '03-10',
