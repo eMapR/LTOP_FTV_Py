@@ -1,0 +1,2 @@
+## LandTrendr Optimization (LTOP)
+Scripts and associated documentation for running the LandTrendr optimization (LTOP) algorithm. This algorithm, or set of algorithms, is intended to be used to make paramater selections for the LandTrendr change detection algorithm (Kennedy et al., 2010, 2018). The full documentation is available [here](https://github.com/eMapR/LTOP_FTV_Py/blob/main/documentation/LTOP_in_Python_API.md). 

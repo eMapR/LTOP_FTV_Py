@@ -1,4 +1,3 @@
-from tabnanny import check
 import ee 
 import params
 import time 
@@ -43,7 +42,7 @@ class RunLTOPFull(object):
     This implements logic to run the required steps, allowing for wait times between running of functions and 
     generation of outputs. 
     '''
-
+    
     def __init__(self,*args,max_time=1200): 
         self.args = args[0] #call args as params.params externally
         self.max_time = max_time
@@ -185,45 +184,55 @@ class RunLTOPFull(object):
             print('The abstract images already exist, proceeding to param selection')
         
         #4. run the extraction of spectral information from abstract image points/kmeans points
-        #check if the 04 output already exists
-        # this can't be done until the drive thing is resolved
-        #temporary 
-        proceed = input("Is the spectral information downloaded? (y/n)")
-        if (proceed == 'y') | (proceed == 'yes'): 
-            print('Assuming spectral extraction is done, proceeding to param selection')
+        #check if the 04 csv output already exists
+        #TODO this should be grouped with the other file names in a more central location
+        #TODO this is currently hardcoded and won't change anything if changed elsewhere or added to params
+        indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']
+        names = []
+        for i in range(len(indices)): 
+            names.append("LTOP_" + self.args['place'] + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected"+".csv")
+        
+        #check if the indices files have already been generated and sent to GCS bucket
+        proceed = ltop.check_multiple_gcs_files(names,self.args['cloud_bucket'])
+        if not proceed: #the files have not been generated
+            print(f'The csv files for LT outputs do not exist, generating in {self.args["cloud_bucket"]}')
+            run_lt_pts.run_LT_abstract_imgs(self.args)
+            while True: 
+                check_status = ltop.check_multiple_gcs_files(names,self.args['cloud_bucket'])
+                if check_status: 
+                    print('The csvs for LT outputs on abstract images are done')
+                    break
+                else: 
+                    time.sleep(self.max_time/10) #TODO this time is somewhat arbitrary
         else: 
-            print('Assuming spectral extraction is not done, generating now')
-            lt_pt_status = run_lt_pts.run_LT_abstract_imgs(self.args)
-        #for the times this is run we could check the task status but its a bit 
-        #unwieldy with five tasks - ideally we just check the drive folder
-        # while True: 
-        #     check_status = self.check_task_status(lt_pt_status['id'])
-        #     if check_status == 'COMPLETED': 
-        #         print('The abstract image informatoin has been extracted and sent to Drive')
-        #         break
-        #     elif (check_status == 'FAILED') | (check_status == 'CANCELLED'): 
-        #         print('The generation of the abstract image point information extraction has failed')
-        #         break
-        #     else: 
-        #         #wait a bit before hitting the server again 
-        #         time.sleep(10) 
+            print('The csv files of LT output already exist, proceeding...')
+            #make sure the intended destination dir exists
+            if not os.path.exists(self.args['param_scoring_inputs']): 
+                os.mkdir(self.args['param_scoring_inputs'])
+            out_fns = [self.args['param_scoring_inputs']+f for f in names]
+            #trigger the download of the csv files from GCS bucket
+            #TODO decide if this should just get everything in a specific folder
+            #TODO add a check to not download if these files already exist
+            ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
         
-        #this is where we would insert logic to check and download from drive 
+        #now check for the downloaded files
+        while True: 
+            if all(os.path.isfile(f) for f in out_fns): 
+                print('Files are done downloading')
+                break
+            else: 
+                time.sleep(self.max_time/10)
 
+        #4.1 run the param selection process which happens in Python. 
+        if os.path.isfile(self.args['outfile']): 
+            print('The selected params already exist')
 
-
-
-
-        # #4.1 run the param selection process which happens in Python. TODO as of 10/12 this 
-        # #cannot actually run without human intervention to move data down from gDrive and back up to GEE
-
-        #put some other kind of check in here after we can upload/download correctly
-        if os.path.exists(self.args['outfile']): 
-            #TODO this print statement will be deprecated when the upload/download logic is correctly working
-            print('The selected params already exist, please make sure they are uploaded as an asset')
-        
         else: 
             print('Starting the param scoring regime')
+            #check if the output dir is there and if not create it
+            out_dir = os.path.split(self.args['outfile'])[0]
+            if not os.path.exists(out_dir): 
+                os.mkdir(out_dir)
             param_scoring.generate_selected_params(self.args) 
             #check when this thing is done
             while True: 
@@ -233,11 +242,38 @@ class RunLTOPFull(object):
                     break
                 else: 
                     #this time is somewhat arbitrary and for a full run will take some hours unless we improve this script 
-                    time.sleep(30) 
+                    time.sleep(self.max_time) 
 
-        proceed = input('Have you uploaded the selected params csv to GEE? (y/n)')
-        if (proceed.lower() == 'y') | (proceed =='yes'): 
-            print('Assuming you have uploaded selected params, starting final output generation')
+        #check if the selected params have been uploaded to GCS
+        selected_params_fn = os.path.split(self.args['outfile'])[1]
+        if ltop.check_single_gcs_file(selected_params_fn,self.args['cloud_bucket']): 
+            print('selected params already exist')
+        else: 
+            print('Uploading selected params to GCS')
+            
+            #just take the file name as the GCS bucket name and upload selected params
+            ltop.upload_to_bucket(os.path.split(self.args['outfile'])[1],self.args['outfile'],self.args['cloud_bucket'])
+            time.sleep(10) #TODO change times? 
+        
+        #now create an asset from the uploaded csv over in GEE
+        #check if an asset exists - for the naming, :-4 is just stripping the ext
+        proceed = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsChild']+'/'+selected_params_fn[:-4]])
+        if proceed: 
+            print('The asset of selected params already exists')
+        else: 
+            print("Creating selected params asset...")
+            ltop.create_gee_asset_from_gcs(selected_params_fn[:-4],f"gs://{self.args['cloud_bucket']}/{selected_params_fn}",self.args['assetsRoot']+self.args['assetsChild'])
+            while True: 
+                check_status = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsChild']+selected_params_fn[:-4]])
+                if check_status: 
+                    print('The selected params have been successfully uploaded')
+                    break
+                else: 
+                    time.sleep(10) #TODO check time 
+        bps_fn = 'Optimized_LT_'+str(self.args['startYear'])+'_start_'+self.args['place']+'_all_cluster_ids_tc'
+        proceed = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsRoot']+'/'+bps_fn])
+        if not proceed: 
+            print('The final breakpoints do not exist, creating')
             lt_vertices_status = make_bps.generate_LTOP_breakpoints(self.args)
             while True:
                 check_status = self.check_task_status(lt_vertices_status['id']) 
@@ -249,14 +285,13 @@ class RunLTOPFull(object):
                     break            
                 else: 
                     #this time is somewhat arbitrary and should be increased for a real run
-                    time.sleep(self.max_time)
+                    time.sleep(30)
         else: 
-            #TODO this will be defunct when we change upload/download
-            print('Please upload the selected params csv as an asset then try again')
-
+            print('The final output breakpoints already exist')
+        
 # #run it- not sure if we want to run from this script or from somewhere else
 # # if __name__ == '__main__': 
 # #     main()
 #max time is set this low just for testing 
-test = RunLTOPFull(params.params,max_time = 30)
+test = RunLTOPFull(params.params,max_time = 1200)
 test.runner()

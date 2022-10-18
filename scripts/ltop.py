@@ -12,15 +12,12 @@ import params
 import lt_params as runParams
 import pandas as pd 
 import LandTrendr as ltgee
-# from LandTrendr import getLTvertStack, buildLTcollection
-# This library holds modules for running an optimized version of the LandTrendr algorithm.The process addresses an
-# issue of paramaterizing the LT algorithm for different types of land cover / land use.
-
-#ltgee = require('users/ak_glaciers/adpc_servir_LTOP:modules/LandTrendr.js')
-#params = require('users/ak_glaciers/adpc_servir_LTOP:modules/params.js')
+from google.cloud import storage
+import subprocess
 
 version = params.params["version"]
-#exports.version = version
+print('LTOP version: ',version)
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # Build an imageCollection from SERVIR comps # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -32,7 +29,10 @@ def map_servir_ic(img):
     return img.select(['blue', 'green', 'red', 'nir', 'swir1', 'swir2'], ['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
 
 def buildSERVIRcompsIC(startYear, endYear):
-
+    '''
+    Build an image collection from SERVIR composites. This could likely be bypassed if we just know
+    what the SERVIR composites ic id is. 
+    '''
     # get the SERVIR composites
     yr_images = []
     yearlist = list(range(startYear,endYear+1))
@@ -52,7 +52,6 @@ def buildSERVIRcompsIC(startYear, endYear):
     comps = servir_ic.map(map_servir_ic)
     return comps
 
-#exports.buildSERVIRcompsIC = buildSERVIRcompsIC
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 01 SNIC # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -60,6 +59,9 @@ def buildSERVIRcompsIC(startYear, endYear):
 # run SNIC and return the imagery
 
 def runSNIC(composites, aoi, patchSize):
+    '''
+    Run the GEE SNIC algorithm to 'patchify' a landscape.
+    '''
     snicImagery = ee.Algorithms.Image.Segmentation.SNIC(image= composites,size= patchSize, compactness= 1, ).clip(aoi)
     return snicImagery
 
@@ -78,57 +80,6 @@ def getSNICseedBands(snic_output):
 
 def SNICmeansImg(snic_output, aoi):
     return getSNICseedBands(snic_output).multiply(getSNICmeanBands(snic_output))
-
-#exports.SNICmeansImg = SNICmeansImg
-
-# now we mimic the part that was happening in QGIS where we make noData, convert pixels to pts, subset and get seed data
-
-
-def pixelsToPts(img, aoi):
-    # convert
-    vectors = img.sample(
-            region= aoi, #.geometry().buffer(-250),
-            geometries= True,
-            scale= 30,
-            projection= 'EPSG:4326',
-    )
-    return ee.FeatureCollection(vectors)
-
-
-# subset fc
-
-def subsetFC(fc, grid_pts_max):
-    output_fc = fc.randomColumn(
-        columnName= 'random',
-        seed= 2,
-        distribution= 'uniform'
-    )
-    output_fc = ee.FeatureCollection(output_fc.sort('random').toList(grid_pts_max).slice(0, grid_pts_max))
-    return output_fc
-
-
-# #exports.subsetFC = subsetFC
-
-# def splitPixIm_helper(feat):
-#     tile_bounds = feat.geometry().buffer(-250)  # could be changed
-
-#     img_tile = means_img.clip(tile_bounds)  # remove this if it errors
-
-#     pts = pixelsToPts(means_img, tile_bounds)
-#     # try subsetting the points here before putting them back together to reduce the size of the dataset
-#     pts = subsetFC(pts, pts_per_tile)
-#     return pts
-
-# # there is an issue where GEE complains if we straight convert pixels to points because there are too many.Try tiling the image and converting those first.
-# def splitPixImg(means_img, grid, pts_per_tile):
-
-#     # we map over the grid tiles, subsetting the image
-#     tile_pts = grid.map(splitPixIm_helper)
-
-#     return tile_pts.flatten()
-
-
-#exports.splitPixImg = splitPixImg
 
 def samplePts_helper(pt,img,abstract):
     value = img.reduceRegion(
@@ -152,14 +103,14 @@ def samplePts(pts, img, abstract=False):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 02 kMeans # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# thefirst handful of functions that make composites and run SNIC in the original workflow are just recycled from above.We only add the kmeans here
-# note also that the band structure is different in this version than what 's generated in QGIS
+# the first handful of functions that make composites and run SNIC in the original workflow are just recycled from above.We only add the kmeans here
 
-# train a means model
+# train a kmeans model
 
 def trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands):
-
-
+    '''
+    Train a GEE kmeans model, using the SNIC outputs as inputs. 
+    '''
     training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters).train(
         features= snic_cluster_pts,
         #realanames= ["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"],
@@ -168,9 +119,10 @@ def trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands):
     )
     return training
 
-
-# run thekmeans model - note that the inputs are being created in the snic section in the workflow document
 def runKmeans(snic_cluster_pts, min_clusters, max_clusters, aoi, snic_output,bands):
+    '''
+    run thekmeans model - note that the inputs are being created in the snic section in the workflow document
+    '''
     # train a kmeans model
     trainedModel = trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands)
     # call the trainedkmeans model
@@ -178,11 +130,11 @@ def runKmeans(snic_cluster_pts, min_clusters, max_clusters, aoi, snic_output,ban
     return clusterSeed
 
 
-#exports.runKmeans = runKmeans
-
-
 def selectKmeansPts(img, aoi):
-
+    '''
+    Take a stratified random sample of the kmeans cluster image- this will yield one point for 
+    every unique cluster ID in the kmeans cluster image. This is output by the kmeans algo.
+    '''
     kmeans_points = img.stratifiedSample(
         numPoints= 1,
         classBand= 'cluster',
@@ -193,17 +145,15 @@ def selectKmeansPts(img, aoi):
     )
     return kmeans_points
 
-
-#exports.selectKmeansPts = selectKmeansPts
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 03 abstractSampler # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 
-# make function to calculate spectral indices
+#TODO note that this could probably be changed to the LandTrendr.py version. It was taken from there
 def computeIdnices_helper(img):
-    # Calculate Tasseled Cap Brightness, Greenness, Wetness
-
+    '''
+    Calculate Tasseled Cap Brightness, Greenness, Wetness
+    '''
     bands = img.select(['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
 
     coefficients = ee.Array([
@@ -228,62 +178,11 @@ def computeIndices(ic):
 
     return output_ic
 
-
-#exports.computeIndices = computeIndices
-
 # Run the extraction
 
 ##############################################
 #start new abstract imaging section
-##################################################/
-################ Import modules ##########################/
-##################################################/
-import ee 
-import params
-import ltop 
-
-# print(ee.__version__)
-
-# Trigger the authentication flow.
-# ee.Authenticate()
-
-# Initialize the library.
-ee.Initialize()
-
-# GLOBAL IABLES
-PRJ = "EPSG:3857"
-
-'''
-This script demonstrates how to generate a synthetic image in 
-GEE alone without using the Python API or local downloads.
-
-The demonstration consists of the following steps:
-1. Generating an medoid time-series over a small area
-2. Sampling the values from the medoid time series
-3. Generating a synthetic image from the sampled values
-4. Exporting the synthetic image as an asset along with the relevant point collections (original and grid)
-'''
-
-
-# Add a sequential ID to a set of points
-# def add_sequential_id (cur, prev): 
-  
-#     # Cast the inputs
-#     cur = ee.Feature(cur)
-#     prev = ee.List(prev)
-
-#     # Get the ID value from the previous feature
-#     prev_id = ee.Feature(prev.get(-1)).getNumber("GRID_ID")
-
-#     # Assign the new grid ID
-#     cur = cur.set("cluster_id", prev_id.add(1).toInt64())
-
-#     return prev.add(cur)
-  
-  
-# Generate a grid of points. Resolution and row length can be specified. 
-
-def generate_point_grid (cluster_ids, resolution): 
+def generate_point_grid (cluster_ids, resolution,PRJ = "EPSG:3857"): 
   
     # Starting coordinates
     x = resolution / 2
@@ -311,7 +210,7 @@ def generate_point_grid (cluster_ids, resolution):
 
     return output 
 
-def loop_over_year(index,start_year,resolution,buffers): 
+def loop_over_year(index,start_year,resolution,buffers,PRJ = "EPSG:3857"): 
     
     # Cast the input
     index = ee.Number(index)
@@ -341,7 +240,7 @@ def loop_over_year(index,start_year,resolution,buffers):
 
     return synthetic
 
-def buffer_func(feat,resolution,error): 
+def buffer_func(feat,resolution,error,PRJ = "EPSG:3857"): 
     return ee.Feature(feat).buffer(resolution / 2, error, PRJ).bounds(error, PRJ)
 
 
@@ -382,8 +281,14 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
 def mask_func(img): 
   return ee.Image(img).unmask(-9999, False)
 
-def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,start_year,end_year):
-
+def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,start_year,end_year,PRJ = "EPSG:3857"):
+  '''
+  Creates synthetic images in GEE by: 
+  1. gets time series of imagery
+  2. samples from time series using kmeans points as locations
+  3. generates a synthetic image from the selected values
+  4. exports the synthetic image along with points for the locations where they were sampled.
+  '''
   #make sure the stratified points from kmeans are cast to a featureCollection 
   kmeans_pts = ee.FeatureCollection(kmeans_pts)
 
@@ -440,54 +345,9 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   task2.start()
   return None
 
-
-
-
-
-
-#DEPRECATED?
-# def runExtraction(images, points, start_year, end_year):
-
-#     # Function that is applied to each year function
-#     def inner_map(year):
-#         # Cast the input
-#         year = ee.Number(year).toInt16()
-
-#         # Construct the dates to filter the image collection
-#         start_date = ee.Date.fromYMD(year, 1, 1)
-#         end_date = ee.Date.fromYMD(year, 12, 31)
-
-#         # Get the image to sample
-#         current_image = ee.Image(images.filterDate(start_date, end_date).first()).addBands(ee.Image.constant(year).rename('year')).unmask(-32768).toInt16()
-
-#         # Run an extraction
-#         extraction = current_image.reduceRegions(
-#             collection= points,
-#             reducer= ee.Reducer.first(),
-#             scale= 30,
-#         )
-
-#         return extraction.toList(points.size())# Peter
-
-
-
-#     # Create a list of years to map over
-#     years = ee.List.sequence(start_year, end_year)
-
-#     # Flatten the outputs
-#     outputs = ee.FeatureCollection(ee.List(years.map(inner_map)).flatten())
-
-#     return outputs
-
-
-#exports.runExtraction = runExtraction
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 04 abstractImager # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# define some LT paramsfor the different versions of LT run below:
-#LandTrendr Parameters
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # note that the versions of LT were moved out of this space to a separate script (lt_params.py)
 
 # function to create a timestamp for the abstract images
@@ -510,54 +370,6 @@ def maskNoDataValues(img):
     # Create the mask
     img_mask = img.neq(-32768)
     return img.updateMask(img_mask)
-
-#OLD VERSION?
-# def getPoint2(geom, img, z):
-#     return img.reduceRegions(collection=geom, 
-#                             reducer = 'first', 
-#                             scale = z) #.getInfo()
-
-# def runLTversionsHelper2(feature,fullParams,indexName,index):
-#     return feature.set('index', indexName).set('params', fullParams[index]).set('param_num', index)
-
-# def runLTversionsHelper(param,fullParams,ic,indexName,id_points):
-#     # this statment finds the index of the parameter being used
-#     index = fullParams.index(param)
-
-#     # here we select the index image on which to run LandTrendr
-#     fullParams[index]["timeseries"] = ic.select([indexName])
-
-#     # run LandTrendr
-
-#     lt = ee.Algorithms.TemporalSegmentation.LandTrendr(fullParams[index])
-
-#     # select the segmenation data from LandTrendr
-
-#     ltlt = lt.select(['LandTrendr'])
-
-#     # slice the LandTrendr data into sub arrays
-
-#     yearArray = ltlt.arraySlice(0, 0, 1).rename(['year'])
-
-#     sourceArray = ltlt.arraySlice(0, 1, 2).rename(['orig'])
-
-#     fittedArray = ltlt.arraySlice(0, 2, 3).rename(['fitted'])
-
-#     vertexMask = ltlt.arraySlice(0, 3, 4).rename(['vert'])
-
-#     rmse = lt.select(['rmse'])
-
-#     # place each array into a image stack one array per band
-#     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
-
-#     # extract a LandTrendr pixel time series at a point
-#     getpin2 = getPoint2(id_points, lt_images,20)  # add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
-
-#     # maps over a feature collection that holds the LandTrendr data and adds attributes: index, params and param number.
-
-#     attriIndexToData = getpin2.map(lambda x: runLTversionsHelper2(x,fullParams,indexName,index)) 
-
-#     return attriIndexToData
 
 def getPoint2(geom, img, z):
     return img.reduceRegions(collection=geom, 
@@ -652,9 +464,6 @@ def mergeLToutputs(lt_outputs):
 
     return featCol
 
-
-#exports.mergeLToutputs = mergeLToutputs
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 05 Optimized Imager # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -726,10 +535,114 @@ def printerFunc(fc, ic, cluster_image, aoi):
 def filterTable(pt_list, index):
     return pt_list.filter(ee.Filter.eq('index', index))
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # GCS functions # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+#helper functions to upload and download to Google Cloud bucket 
+def download_from_bucket(bucket_name,download_file,destination_fn,credentials='creds.json'): 
+    """
+    Download data from a bucket. 
+    """
+    storage_client = storage.Client.from_service_account_json(
+        credentials)
+    # Initialise a client
+    # storage_client = storage.Client(project_name)
+    # bucket = storage_client.get_bucket(bucket_name)
+
+    # Create a bucket object for our bucket
+    bucket = storage_client.get_bucket(bucket_name)
+    # Create a blob object from the filepath - like "folder_one/foldertwo/filename.extension"
+    blob = bucket.blob(download_file)
+    # Download the file to a destination
+    blob.download_to_filename(destination_fn)
+    return None 
+
+def download_multiple_from_bucket(bucket_name,file_list,out_fns,credentials='creds.json'): 
+    """
+    Download data from a bucket. 
+    """
+    storage_client = storage.Client.from_service_account_json(
+        credentials)
+    # Initialise a client
+    # storage_client = storage.Client(project_name)
+    # bucket = storage_client.get_bucket(bucket_name)
+
+    # Create a bucket object for our bucket
+    bucket = storage_client.get_bucket(bucket_name)
+    # Create a blob object from the filepath - like "folder_one/foldertwo/filename.extension"
+    for n in range(len(file_list)): 
+        #make sure the input files are being writtent to the right output file 
+        blob = bucket.blob(sorted(file_list)[n])
+        # Download the file to a destination
+        blob.download_to_filename(sorted(out_fns)[n])
+    return True
+
+#example call
+#download_from_bucket('ltop_assets_storage','LTOP_cambodia_test_selected_params','/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/output_test.csv','ltop-gdrive-downloads')
+
+
+#pip install --upgrade google-cloud-storage. 
+def upload_to_bucket(blob_name, path_to_file, bucket_name,credentials='creds.json'):
+    """ Upload data to a bucket"""
+     
+    # Explicitly use service account credentials by specifying the private key
+    # file.
+    storage_client = storage.Client.from_service_account_json(
+        credentials)
+
+    #print(buckets = list(storage_client.list_buckets())
+
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_filename(path_to_file)
+    
+    #returns a public url
+    return blob.public_url
+
+#example call
+#upload_to_bucket('LTOP_cambodia_test_selected_params','/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/LTOP_Cambodia_zoomed_tc.csv','ltop_assets_storage')
+
+def check_single_gcs_file(gcs_file,bucket_name,credentials='creds.json'):   
+    storage_client = storage.Client.from_service_account_json(
+        credentials)
+    # storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    stats = storage.Blob(bucket=bucket, name=gcs_file).exists(storage_client)
+    return stats
+
+def check_multiple_gcs_files(file_list,bucket_name,credentials='creds.json'):   
+    storage_client = storage.Client.from_service_account_json(
+        credentials)
+    # storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    for file in file_list: 
+        stats = storage.Blob(bucket=bucket, name=file).exists(storage_client)
+        if stats: 
+            continue
+        else: 
+            return False
+
+    return stats
+
+def create_gee_asset_from_gcs(asset_id,gcloud_uri,gee_assets_dir): 
+    # request_id = ee.data.newTaskId()[0]
+    asset_id = gee_assets_dir+'/'+asset_id
+    print('asset id is: ',asset_id)
+    print('and glcoud uri is: ',gcloud_uri)
+    #this commandline version works: earthengine upload table --asset_id=projects/ee-ltop-py/assets/LTOP_full_run/LTOP_cambodia_tc gs://ltop_assets_storage/LTOP_Cambodia_tc.csv
+    # gee_params = {
+    #     'name':asset_id,
+    #     'uris':gcloud_uri,
+    #     # maybe need some other stuff here
+    # }
+    subprocess.run(f'earthengine upload table --asset_id={asset_id} {gcloud_uri}',shell=True)
+    # ee.data.startIngestion(request_id=request_id, params=gee_params)
+    return None 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # Invoking functions # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # now set up functions for calling each step.These are like wrappers for the above functions and are called externally.
+# it may make more sense to just put the things from the five scripts into this section so we can ditch those 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # 01 SNIC # # # # # # /
@@ -782,9 +695,6 @@ def kmeans02_2(kmeans_imagery, aoi):
 
     return kMeansPoints
 
-
-#exports.kmeans02_1 = kmeans02_1
-#exports.kmeans02_2 = kmeans02_2
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 03 abstractSampler # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -802,21 +712,7 @@ def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, sta
     #this is set up to just trigger the creation of the abstract images 
     abstractImageOutputs = generate_abstract_images(images_w_indices,kMeansPts,assets_folder,grid_res,startYear,endYear)
 
-
-    ##################
-    #DEPRECATED?
-    # # extract values from the composites at the points created in the kmeans step above
-
-    # spectralExtraction = runExtraction(images_w_indices, kMeansPts, startYear, endYear)
-    #####################
-    # Select out the relevant bands
-    # abstractImageOutputs = spectralExtraction.select(['cluster_id', 'year', 'NBR', 'TCW', 'TCG', 'NDVI', 'B5'], None,False) #.sort('cluster_id') null and false are the old js arguments
-
-
     return abstractImageOutputs
-
-
-#exports.abstractSampler03_1 = abstractSampler03_1
 
 def abstractSampler03_2(img_path, startYear, endYear):
 
@@ -833,12 +729,10 @@ def abstractSampler03_2(img_path, startYear, endYear):
     abstractImagesIC = ee.ImageCollection.fromImages(abstractImages)
     return abstractImagesIC
 
-#exports.abstractSampler03_2 = abstractSampler03_2
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # 04abstractImager # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-def abstractImager04(abstractImagesIC, place, id_points): 
+def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket): 
     # wrap this into a for loop
     indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']
 
@@ -862,13 +756,22 @@ def abstractImager04(abstractImagesIC, place, id_points):
 
         # then export the outputs - the paramater selection can maybe be done in GEE at some point but its
         # a big python script that needs to be translated into GEE
-        task = ee.batch.Export.table.toDrive(
-            collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+        # task = ee.batch.Export.table.toDrive(
+        #     collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+        #     selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
+        #     description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+        #     folder= "LTOP_" + place + "_abstractImageSamples_c2",
+        #     fileFormat= 'CSV'
+        # )
+
+        task = ee.batch.Export.table.toCloudStorage(
+            collection = combinedLToutputs,
+            description = "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+            bucket = gcs_bucket,
             selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
-            description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
-            folder= "LTOP_" + place + "_abstractImageSamples_c2",
-            fileFormat= 'CSV'
+            fileFormat = 'CSV'
         )
+
         task.start()
     return None
 
@@ -912,6 +815,3 @@ def optimizedImager05(table, annualSRcollection, kmeans_output, aoi):
     # create the vertices in the form of an array image
     lt_vert = ltgee.getLTvertStack(ltcol, params).select([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).int16()
     return lt_vert
-
-
-#exports.optimizedImager05 = optimizedImager05
