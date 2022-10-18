@@ -15,7 +15,6 @@ This document outlines the overall workflow for running a version of LTOP that i
 
 The workflow assumes some understanding of running scripts in GEE, generating jobs and exporting assets or files to gDrive. The approach also assumes some understanding of Python and how to at least run a Python script in an IDE or from the command line. We start by outlining some of the background for the process, some information on the general overview of the workflow and how this could be set up for somebody to actually run. We then go through the steps to produce LTOP output, how the outputs can be assessed and then some of the pitfalls one might run into while carrying out this workflow. Note that to produce temporally stabilized outputs of an existing time series see the SERVIR_stabilization [GitHub repository](https://github.com/eMapR/SERVIR_stabilization). 
 
-
 [General overview of theory and background](https://docs.google.com/presentation/d/1ra8y7F6_vyresNPbT3kYamVPyxWSfzAm7hCMc6w8N-M/edit?usp=sharing)
 
 Workflow conceptual diagram: 
@@ -29,18 +28,18 @@ Overview of script platform distribution (GEE vs Python):
 As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and does not require the user to run individual steps manually. The entire workflow is now autmoated and just requires that the user set up certain components in advance of a run. The pertinent scripts are now available from the [GitHub repo](https://github.com/eMapR/LTOP_FTV_Py). 
 
 The important components are: 
-1. [run_ltop_complete.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/run_ltop_complete.py)
-2. [ltop.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/ltop.py)
-3. [params.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/params.py)
-4. [lt_params.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/lt_params.py)
-5. [LandTrendr.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/LandTrendr.py)
+1. [run_ltop_complete.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py)
+2. [ltop.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py)
+3. [params.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py)
+4. [lt_params.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py)
+5. [LandTrendr.py](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py)
 and then the five module scripts from the original workflow: 
-6. [SNIC](https://github.com/eMapR/LTOP_FTV_Py/blob/main/run_SNIC_01.py)
-7. [kmeans 1](https://github.com/eMapR/LTOP_FTV_Py/blob/main/run_kMeans_02_1.py)
-8. [kmeans 2](https://github.com/eMapR/LTOP_FTV_Py/blob/main/run_kMeans_02_2.py)
-9. [abstract image generation](https://github.com/eMapR/LTOP_FTV_Py/blob/main/abstract_sampling_03.py)
-10. [run LT for abstract images](https://github.com/eMapR/LTOP_FTV_Py/blob/main/abstract_imager_04.py)
-11. [create LTOP breakpoints](https://github.com/eMapR/LTOP_FTV_Py/blob/main/generate_LTOP_05.py)
+6. [SNIC](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py)
+7. [kmeans 1](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_1.py)
+8. [kmeans 2](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_2.py)
+9. [abstract image generation](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_sampling_03.py)
+10. [run LT for abstract images](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_imager_04.py)
+11. [create LTOP breakpoints](https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/generate_LTOP_05.py)
 
 #### Note 
 The only script that user should really be concerned with is the run_ltop_complete.py and even then, that script defines a single class that could be called externally (see below for examples). 
