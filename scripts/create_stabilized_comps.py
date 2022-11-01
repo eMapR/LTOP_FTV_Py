@@ -67,6 +67,7 @@ def match_LT_to_servir(band_names,lt_fit_output,*args):
     Reconfigure the LT outputs (band names etc.) to look like the SERVIR composites. This section could likely be rewritten to be more efficient/use 
     less for loops but should currently be working
     '''
+    args = args[0]
     #make an arry and fill with years from the startYear to the endYear and convert them to string
     years = [str(y) for y in range(args['startYear'],args['endYear']+1)] 
 
@@ -159,7 +160,7 @@ def get_asset_names(assets_dir,search_term):
         assets = [a['name'] for a in assets['assets'] if search_term in a['name']]
         return assets
 
-def main(*args): 
+def main(aoi,*args): 
     '''
     Invoke the process to generate stabilized composites from an input dataset. Defaults to (and expects) the SERVIR composites and their naming/band structure. 
     Script will output or generate one task for each year (composite) in the time series. This time series length is dictated by the startYear and endYear args in the 
@@ -169,9 +170,9 @@ def main(*args):
 
     if args['run_times'] == 'multiple': 
         #we need to combine multiple outputs in the instance that's how they're formatted
-        cluster_image = get_asset_names(args['assetsRoot']+args['assetsChild'],'KMEANS_cluster_image')
-        ltop_output = get_asset_names(args['assetsRoot']+args['assetsChild'],'Optimized')
-        table = get_asset_names(args['assetsRoot']+args['assetsChild'],'LT_params_tc')
+        cluster_image = ee.ImageCollection.fromImages(get_asset_names(args['assetsRoot']+args['assetsChild'],'KMEANS_cluster_image')).mosaic()
+        ltop_output = ee.ImageCollection.fromImages(get_asset_names(args['assetsRoot']+args['assetsChild'],'Optimized')).mosaic()
+        table = ee.FeatureCollection(ee.List(get_asset_names(args['assetsRoot']+args['assetsChild'],'LT_params_tc'))).flatten()
 
     elif args['run_times'] == 'single': 
         #get the necessary inputs from LTOP process- USE for a single geometry run
@@ -181,8 +182,8 @@ def main(*args):
 
     #build imageCollection of SERVIR composites 
     servir_ic = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear']) 
-
-    servir_ic = servir_ic.filterBounds(args['aoi']) 
+    #TODO this could probably be changed for an instance with single or multiple runs 
+    servir_ic = servir_ic.filterBounds(aoi) 
     #get a list of all the servir bands
     band_names = servir_ic.first().bandNames() 
     num_bands = band_names.size() 
@@ -195,6 +196,8 @@ def main(*args):
     output = export_imgs(export_collection,args)
 
 if __name__ == '__main__': 
+    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
+
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-        main(cfg)
+        main(aoi,cfg)
