@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>List of important scripts for running the LTOP workflow &#8212; LTOP_py_docs 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="What does params.py contain?" href="params.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="general_setup.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="list-of-important-scripts-for-running-the-ltop-workflow">
+<h1>List of important scripts for running the LTOP workflow<a class="headerlink" href="#list-of-important-scripts-for-running-the-ltop-workflow" title="Permalink to this heading">¶</a></h1>
+<p>As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and does not require the user to run individual steps manually. The entire workflow is now autmoated and just requires that the user set up certain components in advance of a run. The pertinent scripts are now available from the [GitHub repo](<a class="reference external" href="https://github.com/eMapR/LTOP_FTV_Py">https://github.com/eMapR/LTOP_FTV_Py</a>).</p>
+<section id="the-important-components-are">
+<h2>The important components are:<a class="headerlink" href="#the-important-components-are" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><cite>run_ltop_complete.py &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py&gt;</cite></p></li>
+<li><p><cite>ltop.py &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py&gt;</cite></p></li>
+<li><p><cite>params.py &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py&gt;</cite></p></li>
+<li><p><cite>lt_params.py &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py&gt;</cite></p></li>
+</ol>
+<p>5. <cite>LandTrendr.py &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py&gt;</cite>
+and then the five module scripts from the original workflow:
+6. <cite>SNIC &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py&gt;</cite>
+8. <cite>kmeans 2 &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_2.py&gt;</cite>
+7. <cite>kmeans 1 &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_1.py&gt;</cite>
+9. <cite>abstract image generation &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_sampling_03.py&gt;</cite>
+10. <cite>run LT for abstract images &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_imager_04.py&gt;</cite>
+11. <cite>create LTOP breakpoints &lt;https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/generate_LTOP_05.py&gt;</cite></p>
+<p><strong>Note</strong>
+The only script that user should really be concerned with is the run_ltop_complete.py and even then,
+that script defines a single class that could be called externally (see below for examples).</p>
+<p>All of these scripts can be either run on a local machine or in the cloud. To prepare a run the user
+should either <cite>git clone &lt;https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository&gt;</cite>
+the full repository or if you are interested in helping with development you
+can <cite>fork &lt;https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks&gt;</cite>
+the repository to your local machine/cloud instance.</p>
+<p>To set up a run of the LTOP workflow, you should start with the params.py file. This holds all of the
+important components that will be used to run the workflow. Setting all of this up in advance <em>should</em>
+ensure that your run goes smoothly.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">LTOP_py_docs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">List of scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-important-components-are">The important components are:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="params.html">LTOP paramaters</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="general_setup.html" title="previous chapter">&lt;no title&gt;</a></li>
+      <li>Next: <a href="params.html" title="next chapter">What does params.py contain?</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ben Roberts-Pierel, Peter Clary, Robert Kennedy, Jack Kilbride.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/scripts_list.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -17,6 +17,8 @@
 import ee
 # import params
 import LandTrendr as ltgee
+import importlib
+importlib.reload(ltgee)
 import ltop
 # print(ee.__version__)
 
@@ -44,7 +46,6 @@ def build_image_collection(*args):
     elif args["image_source"] != 'medoid':
         comps = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear'])
         tc = ltgee.transformSRcollection(comps, ['tcb','tcg','tcw'])
-    
         #TODO this could probably be wrapped into a list comprehension for brevity 
         #now make an image out of a start, mid and end point of the time series 
         image21 = tc.filter(ee.Filter.eq('system:index','2021')).first()
@@ -56,7 +57,6 @@ def build_image_collection(*args):
         image98 = tc.filter(ee.Filter.eq('system:index','1998')).first()
         image94 = tc.filter(ee.Filter.eq('system:index','1994')).first()
         image90 = tc.filter(ee.Filter.eq('system:index','1990')).first()
-
         LandsatComposites = image90.addBands(image94).addBands(image98).addBands(image02).addBands(image06).addBands(image10).addBands(image14).addBands(image18).addBands(image21)
     return LandsatComposites
 
@@ -69,7 +69,6 @@ def generate_snic_outputs(*args):
     '''
     args = args[0] 
     LandsatComposites = build_image_collection(args)
-
 
     snic_output01 = ltop.snic01(LandsatComposites,args["aoi"],args["randomPts"],args["seedSpacing"])
 

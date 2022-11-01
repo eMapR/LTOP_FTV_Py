@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>What does params.py contain? &#8212; LTOP_py_docs 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="examples.html" />
+    <link rel="prev" title="List of important scripts for running the LTOP workflow" href="scripts_list.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="what-does-params-py-contain">
+<h1>What does params.py contain?<a class="headerlink" href="#what-does-params-py-contain" title="Permalink to this heading">¶</a></h1>
+<p>params.py gets imported as a python module in the LTOP workflow. Contained within the params.py script is a single dictionary that is accessible by the external programs that call it. This dictionary contains all of the necessary components to run the full workflow. There are a few optional arguments that are currently (10/18/2022) set as defaults in various functions. See below for notes on those.</p>
+<p>The first three assets are set first, they are re-used below to construct additional inputs.
+place: str</p>
+<blockquote>
+<div><p>This will be used in naming construction throughout the process so give it a meaningful name</p>
+</div></blockquote>
+<dl class="simple">
+<dt>assetsRoot: str</dt><dd><p>This will be either your ‘users/username’ or moving to the future requirements for GEE it should be linked to a gcloud project and would look like: ‘projects  name-of-your-project/assets/’, for example.</p>
+</dd>
+<dt>assetsChild: str</dt><dd><p>The folder you want your assets to end up in inside your project. Note that the script will create this folder if it does not find it in your project repo.</p>
+</dd>
+</dl>
+<p>The remainder of the inputs are defined inside a dictionary called params and are callable by outside scripts by key.
+version:</p>
+<blockquote>
+<div><p>0.1.0 as of 10/18/2022 with the 0.1 designating the shift to Python.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>place: str</dt><dd><p>Imported from above</p>
+</dd>
+<dt>startYear: int</dt><dd><p>Most of the scripts assume 1990 is the start year. You can run it with a different time frame but generally we advise running as many years as possible in the LandTrendr algorithm.</p>
+</dd>
+<dt>endYear: int</dt><dd><p>Most recent full year available in input imagery</p>
+</dd>
+<dt>seedSpacing: int</dt><dd><p>This defines the starting seed spacing for the SNIC algorithm. The default should be 10. See GEE documentation for more information on this param. It only needs to be changed if you are interested in the specific effects of the SNIC inputs/outputs.</p>
+</dd>
+<dt>randomPts: int</dt><dd><p>The number of random points we use to sample the SNIC imagery. There is not a best known value but generally more is better. Default should be 20,000. You can try more, we don’t necessarily recommend less. This seemed sufficient for an area the size of SE Asia.</p>
+</dd>
+<dt>imageSource: str</dt><dd><p>One of either ‘servir’ or ‘medoid’. Note that as of 10/18/2022 the functionality for medoids does not currently exist.</p>
+</dd>
+<dt>assetsRoot: str</dt><dd><p>Defined from assetsRoot variable above.</p>
+</dd>
+<dt>assetsChild: str</dt><dd><p>Defined from assetsChild above.</p>
+</dd>
+<dt>aoi: GEE FC</dt><dd><p>This is the study area you want to run. NOTE that it must be cast as a .geometry() object, not just a featureCollection.</p>
+</dd>
+<dt>maxClusters: int</dt><dd><p>Defines the max clusters for the kmeans algorithm implemented in GEE. Somewhere around 5,000 seems to be the max. Generally, 2500 seems sufficient for something about the size of Cambodia.</p>
+</dd>
+<dt>minClusters: int</dt><dd><p>Generally set to the same as maxClusters but could be set lower.</p>
+</dd>
+<dt>selectedLTparams: GEE FC</dt><dd><p>This will just be constructed for you from the other input params.</p>
+</dd>
+<dt>param_scoring_inputs: str, filepath like</dt><dd><p>Filepath to a local directory where you want the LT outputs from running on abstract image points to reside. Note that this folder will be created for you in the script if you have not created it in advance.</p>
+</dd>
+<dt>outfile: str, filepath like</dt><dd><p>This should be a local directory where you want the selected LT params for generating LTOP breakpoints to end up. Note that the folder will be created for you if you have not created it in advance.</p>
+</dd>
+<dt>njobs: int</dt><dd><p>Number of cores to use in param selection. This will likely be changed in future versions.</p>
+</dd>
+</dl>
+<p>#note that this must be set up in advance, the script will not do it for you!!
+cloud_bucket: str, GCS cloud bucket name</p>
+<blockquote>
+<div><p>This is the name of a cloud bucket in a Google Cloud Services account. See notes below for setting this up.</p>
+</div></blockquote>
+<p>NOTE that as of 10/18/2022, the necessary code to run medoid composites does not yet exist. When that is done, the below args will be required to generate medoid composites from existing LandTrendr modules.
+“startDate”:’11-20’,
+“endDate”: ‘03-10’,
+“masked”: [‘cloud’, ‘shadow’]
+}
+===============
+Other arguments
+===============</p>
+<p>The class that runs LTOP takes the param dictionary as the primary input, passed as *args, and then a max_time argument which can be passed separately to the class. This defines the time you want the program to wait before re-checking if a process or task is complete. There is not a ‘perfect’ answer here but it is mostly in place so that the program does not try to query Google’s servers every half second.</p>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">LTOP_py_docs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="scripts_list.html">List of scripts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">LTOP paramaters</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="scripts_list.html" title="previous chapter">List of important scripts for running the LTOP workflow</a></li>
+      <li>Next: <a href="examples.html" title="next chapter">&lt;no title&gt;</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ben Roberts-Pierel, Peter Clary, Robert Kennedy, Jack Kilbride.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/params.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

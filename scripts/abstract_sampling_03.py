@@ -41,7 +41,9 @@ def create_abstract_imgs(*args):
                                                   args['assetsRoot']+args['assetsChild'],
                                                   30, #TODO add to params? 
                                                   args['startYear'], 
-                                                  args['endYear']) 
+                                                  args['endYear'],
+                                                  args['place']
+                                                  ) 
 
   return None 
 #DEPRECATED?

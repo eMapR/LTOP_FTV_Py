@@ -22,9 +22,10 @@ def generate_kmeans_image(*args):
     we run different versions of LandTrendr. 
     '''
     args = args[0]
-    #note that paths need to be changed to access a Google cloud project 
+    #the filter at the end of the snic feature collection (arg1) expects to find whatever the band naming structure of the first band will be from SNIC. If you change the 
+    #SNIC inputs this should also be changed. TODO this could also be done automatically. 
     kmeans_output02_1 = ltop.kmeans02_1(ee.FeatureCollection(
-        args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_pts_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])).filter(ee.Filter.neq('B1_mean', None)),
+        args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_pts_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])).filter(ee.Filter.neq('TCB_mean', None)),
         ee.Image(args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_imagery_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])),
         args["aoi"],
         args["minClusters"],

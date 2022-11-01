@@ -207,8 +207,7 @@ def calcIndex(img, inx, flip):
 
 def calc_bands(img,bandList): 
     allStack = calcIndex(img, bandList[0], 0)
-    for band in range(len(bandList)): 
-
+    for band in range(1,len(bandList)): 
         bandImg = calcIndex(img, bandList[band], 0)
         allStack = allStack.addBands(bandImg)
     return allStack.set('system:time_start', img.get('system:time_start'))
@@ -485,7 +484,6 @@ def getLTvertStack(lt, runParams):
   lt = lt.select('LandTrendr')
   emptyArray = []                              # make empty array to hold another array whose length will vary depending on maxSegments parameter    
   vertLabels = []                              # make empty array to hold band names whose length will vary depending on maxSegments parameter 
-  print('max segments is: ',runParams['maxSegments']+1) #TODO not sure if this is being done correctly
   for i in range(0,runParams['maxSegments']+1):  # loop through the maximum number of vertices in segmentation and fill empty arrays                        # define vertex number as string 
     vertLabels.append("vert_"+str(i))               # make a band name for given vertex
     emptyArray.append(0)                             # fill in emptyArray
