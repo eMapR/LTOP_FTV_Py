@@ -27,9 +27,9 @@ except Exception as e:
 	ee.Initialize()
 
 
-#############################/
-##########Bring in the LTOP outputs#######
-#############################/
+#############################
+####Bring in the LTOP outputs
+#############################
 
 def prep_inputs(ltop_bps,selected_lt_params,ic,cluster_image,band_names,min_obvs=11): 
     '''
@@ -53,14 +53,14 @@ def rename_helper(y,modifier):
     return ee.String(y).cat(modifier)
 
 def rename_bands(img,modifier,start_names):
-    end_names = start_names.map(lambda y: rename_helper(y,modifier)) 
+    end_names = [rename_helper(n,modifier) for n in start_names]#start_names.map(lambda y: rename_helper(y,modifier)) 
     return img.select(start_names,end_names)
 
 def rename_lt_fit(name,lt_fit_output,years): 
     #this is an array image with a time series
     nm = ee.String(name)
     img = lt_fit_output.select(nm)
-    return rename_bands(img.arrayFlatten([years],nm).set('source_band',nm),ee.String('_').cat(nm))
+    return rename_bands(img.arrayFlatten([years],nm).set('source_band',nm),ee.String('_').cat(nm),years)
 
 def match_LT_to_servir(band_names,lt_fit_output,*args):
     '''
@@ -128,26 +128,26 @@ def rebuild_image_collection(num_bands,FTVstacks):
     output = output.sort('year') 
     return output
 
-def export_imgs(output_collection,*args): 
+def export_imgs(output_collection,aoi,*args): 
     '''
     Generate GEE tasks to export each image in the imageCollection. This could also be set up to export an imageCollection instead of individual images but its 
     supposed to mimic the setup of the SERVIR composites. 
     '''
+    args = args[0]
     for i in range(args['startYear'],args['endYear']+1): 
-    
-        out_img = output_collection.filter(ee.Filter.eq('year',i)).first().clip(args['aoi'])
+        out_img = output_collection.filter(ee.Filter.eq('year',i)).first().clip(aoi)
         yr_str = ee.Number(i).format().getInfo() 
     
         task = ee.batch.Export.image.toAsset(
             image = out_img, 
             description = "servir_"+yr_str+"_stabilized_"+args['place'], 
-            assetId = args['assetsChild']+"/servir_"+yr_str+"_stabilized_"+args['place'], 
-            region = args['aoi'], 
+            assetId = args['assetsRoot']+args['assetsChild']+"/servir_"+yr_str+"_stabilized_"+args['place'], 
+            region = aoi, 
             scale = 30, 
             maxPixels = 1e13 
             )
         task.start()
-        return None 
+    return None 
 
 def get_asset_names(assets_dir,search_term): 
         '''
@@ -159,6 +159,11 @@ def get_asset_names(assets_dir,search_term):
         #subset the assets to just their names that contain search_term
         assets = [a['name'] for a in assets['assets'] if search_term in a['name']]
         return assets
+def reformat_image_ls(image_list): 
+    return [ee.Image(i) for i in image_list]
+
+def reformat_fc_ls(fc_list): 
+    return [ee.FeatureCollection(fc) for fc in fc_list]
 
 def main(aoi,*args): 
     '''
@@ -170,9 +175,9 @@ def main(aoi,*args):
 
     if args['run_times'] == 'multiple': 
         #we need to combine multiple outputs in the instance that's how they're formatted
-        cluster_image = ee.ImageCollection.fromImages(get_asset_names(args['assetsRoot']+args['assetsChild'],'KMEANS_cluster_image')).mosaic()
-        ltop_output = ee.ImageCollection.fromImages(get_asset_names(args['assetsRoot']+args['assetsChild'],'Optimized')).mosaic()
-        table = ee.FeatureCollection(ee.List(get_asset_names(args['assetsRoot']+args['assetsChild'],'LT_params_tc'))).flatten()
+        cluster_image = ee.ImageCollection.fromImages(reformat_image_ls(get_asset_names(args['assetsRoot']+args['assetsChild'],'KMEANS_cluster_image'))).mosaic()
+        ltop_output = ee.ImageCollection.fromImages(reformat_image_ls(get_asset_names(args['assetsRoot']+args['assetsChild'],'Optimized'))).mosaic()
+        table = ee.FeatureCollection(ee.List(reformat_fc_ls(get_asset_names(args['assetsRoot']+args['assetsChild'],'LT_params_tc')))).flatten()
 
     elif args['run_times'] == 'single': 
         #get the necessary inputs from LTOP process- USE for a single geometry run
@@ -193,11 +198,15 @@ def main(aoi,*args):
     new_collection = match_LT_to_servir(band_names,lt_fit_outputs,args)
     export_collection = rebuild_image_collection(num_bands,new_collection)
     #should return None 
-    output = export_imgs(export_collection,args)
+    output = export_imgs(export_collection,aoi,args)
 
 if __name__ == '__main__': 
-    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
-
+    # aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
+    aoi = ee.Geometry.Polygon(
+        [[[95.94936331685892, 18.817161691248636],
+          [95.94936331685892, 17.878671478111862],
+          [97.12490042623392, 17.878671478111862],
+          [97.12490042623392, 18.817161691248636]]])
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
         main(aoi,cfg)

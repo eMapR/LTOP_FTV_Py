@@ -1,0 +1,23 @@
+run_times: 'multiple'
+place: 'servir_grid'
+startYear: 1990
+endYear: 2021
+seedSpacing: 10
+randomPts: 20000
+imageSource: 'servir'
+assetsRoot: 'projects/ee-ltop-py/assets/'
+assetsChild: 'LTOP_py_SERVIR_grid'
+aoi: 'None'    
+maxClusters: 2500
+minClusters: 2500
+param_scoring_inputs: "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/"
+outfile: "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/"
+njobs: 8
+cloud_bucket: "ltop_assets_storage"
+    
+# only needed for medoid composites
+startDate: '11-20'
+endDate: '03-10'
+masked: 
+  - 'cloud' 
+  - 'shadow'

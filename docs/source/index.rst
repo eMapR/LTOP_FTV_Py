@@ -23,7 +23,7 @@ more appropriate to specific geographic areas. The process relies on the Google 
    LTOP paramaters <config.rst>
    Example run <examples.rst>
    Information on LTOP steps <ltop_steps.rst>
-   
+   Image stabilization <stabilization.rst>
 
 
 
