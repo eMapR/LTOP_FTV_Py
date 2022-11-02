@@ -17,7 +17,7 @@ this artifact but has been shown to have positive impacts in some areas. Some ad
 **SETUP**
 Like the LTOP workflow, this is now set up to accept arguments from the config.yml file that is used as the basis for the LTOP inputs. Running the `create_stabilized_comps.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/create_stabilized_comps.py>`_ 
 script will generate a task in your GEE account for each year in the time series. This is defined by the startYear and endYear args in the config.yml file. running this stabilization script requires
-the `ltop modules <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_ and the `config.yml <>`
+the `ltop modules <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_ and the `config.yml <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/config.yml>`_.   
 
 The first step is to take the outputs of the LTOP workflow and using those with the input time series (in this case SERVIR composites), run LandTrendr Fit to 
 generate temporally stabilized values. To run this you need some of the items created with the LTOP workflow. Description of what these things are, the step 
