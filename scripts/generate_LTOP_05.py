@@ -21,11 +21,11 @@ def generate_LTOP_breakpoints(*args):
    #naming convention based on previously generated image
    cluster_img = ee.Image(args['assetsRoot']+args['assetsChild']+"/LTOP_KMEANS_cluster_image_"+str(args['randomPts'])+"_pts_"+str(args['maxClusters'])+"_max_"+str(args['minClusters'])+"_min_clusters_"+args['place']+"_c2_"+str(args['startYear']))
    #these composites are used for the last two steps and span the full period
-   if args["imageSource"] == 'medoid':
+   if args["image_source"] == 'medoid':
       pass
       # annualSRcollection = ltgee.buildSRcollection(params.startYear, params.endYear, params.startDate, params.endDate, params.aoi, params.masked); 
 
-   elif args["imageSource"] != 'medoid':
+   elif args["image_source"] != 'medoid':
       annualSRcollection = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear']); 
 
    # 5. create the optimized output

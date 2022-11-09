@@ -1,17 +1,17 @@
-run_times: 'multiple'
-place: 'servir_grid'
+run_times: 'single'
+place: 'ne_cambodia_low_kmeans'
 startYear: 1990
 endYear: 2021
 seedSpacing: 10
 randomPts: 20000
-imageSource: 'servir'
+image_source: 'servir'
 assetsRoot: 'projects/ee-ltop-py/assets/'
-assetsChild: 'LTOP_py_SERVIR_grid'
+assetsChild: 'LTOP_py_NE_Cambodia_low_kmeans'
 aoi: 'None'    
-maxClusters: 2500
-minClusters: 2500
-param_scoring_inputs: "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/"
-outfile: "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/"
+maxClusters: 100
+minClusters: 100
+param_scoring_inputs: "/vol/v1/proj/LTOP_FTV_Py/"
+outfile: "/vol/v1/proj/LTOP_FTV_Py/selected_lt_params/"
 njobs: 8
 cloud_bucket: "ltop_assets_storage"
     

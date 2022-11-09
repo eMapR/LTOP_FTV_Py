@@ -60,13 +60,14 @@ def parse_params(aoi,*args):
     elif args['run_times'] == 'single': 
         args.update({'param_scoring_inputs':os.path.join(args['param_scoring_inputs'],'output_04_'+args["place"]+'/')}) #TODO not sure if this needs the slash there or not 
         args.update({'outfile':os.path.join(args['outfile'],f'LTOP_{args["place"]}_selected_LT_params_tc.csv')})
+        args.update({'aoi':aoi})
     else: 
         raise(IncorrectConfigValError(args['run_times']))
     args.update({'startYear':int(args['startYear'])})
     args.update({'endYear':int(args['endYear'])})
     args.update({'seedSpacing':int(args['seedSpacing'])})
     args.update({'randomPts':int(args['randomPts'])})
-    args.update({'imageSource':str(args['imageSource'])})
+    args.update({'image_source':str(args['image_source'])})
     args.update({'assetsRoot':str(args['assetsRoot'])})
     args.update({'assetsChild':str(args['assetsChild'])})
     args.update({'maxClusters':int(args['maxClusters'])})

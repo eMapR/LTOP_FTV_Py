@@ -14,7 +14,7 @@ adjusted spectral values. The process also has the benefit of interpolating some
 SLC-off error that is frequently encountered when working with imagery from Landsat 7 in the years between 2003 and 2012. The process does not always improve 
 this artifact but has been shown to have positive impacts in some areas. Some additional information on this process is available in the associated Google Slides.
 
-**SETUP**
+**SETUP**    
 Like the LTOP workflow, this is now set up to accept arguments from the config.yml file that is used as the basis for the LTOP inputs. Running the `create_stabilized_comps.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/create_stabilized_comps.py>`_ 
 script will generate a task in your GEE account for each year in the time series. This is defined by the startYear and endYear args in the config.yml file. running this stabilization script requires
 the `ltop modules <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_ and the `config.yml <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/config.yml>`_.   

@@ -128,13 +128,35 @@ def rebuild_image_collection(num_bands,FTVstacks):
     output = output.sort('year') 
     return output
 
-def export_imgs(output_collection,aoi,*args): 
+def check_year_range(startYear,endYear,*args): 
+    '''
+    Helper function to check if we should pull year range from config or define from user args. 
+    '''
+    args = args[0]
+    if (startYear == None) & (endYear == None): 
+        return args['startYear'], args['endYear']
+    
+    elif (startYear != None) & (endYear != None): 
+        return startYear, endYear
+
+    elif (startYear != None) & (endYear == None): 
+        return startYear, args['endYear']
+
+    elif (startYear == None) & (endYear != None): 
+        return args['startYear'], endYear 
+    
+    else: 
+        print('Check the inputs for start and end years')
+        return None 
+
+def export_imgs(output_collection,aoi,*args,startYear=None,endYear=None): 
     '''
     Generate GEE tasks to export each image in the imageCollection. This could also be set up to export an imageCollection instead of individual images but its 
     supposed to mimic the setup of the SERVIR composites. 
     '''
     args = args[0]
-    for i in range(args['startYear'],args['endYear']+1): 
+    startYear,endYear = check_year_range(startYear,endYear,args)
+    for i in range(startYear,endYear+1): 
         out_img = output_collection.filter(ee.Filter.eq('year',i)).first().clip(aoi)
         yr_str = ee.Number(i).format().getInfo() 
     
@@ -159,13 +181,14 @@ def get_asset_names(assets_dir,search_term):
         #subset the assets to just their names that contain search_term
         assets = [a['name'] for a in assets['assets'] if search_term in a['name']]
         return assets
+
 def reformat_image_ls(image_list): 
     return [ee.Image(i) for i in image_list]
 
 def reformat_fc_ls(fc_list): 
     return [ee.FeatureCollection(fc) for fc in fc_list]
 
-def main(aoi,*args): 
+def main(aoi,*args,startYear=None,endYear=None): 
     '''
     Invoke the process to generate stabilized composites from an input dataset. Defaults to (and expects) the SERVIR composites and their naming/band structure. 
     Script will output or generate one task for each year (composite) in the time series. This time series length is dictated by the startYear and endYear args in the 
@@ -182,8 +205,8 @@ def main(aoi,*args):
     elif args['run_times'] == 'single': 
         #get the necessary inputs from LTOP process- USE for a single geometry run
         cluster_image = ee.Image(args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]))
-        ltop_output = ee.Image('Optimized_LT_'+str(args['startYear'])+'_start_'+ args['place']+'_all_cluster_ids_tc')
-        table = ee.FeatureCollection(args['outfile'])
+        ltop_output = ee.Image(args["assetsRoot"]+args["assetsChild"]+'/Optimized_LT_'+str(args['startYear'])+'_start_'+ args['place']+'_all_cluster_ids_tc')
+        table = ee.FeatureCollection(args["assetsRoot"]+args["assetsChild"]+f'/LTOP_{args["place"]}_selected_LT_params_tc')
 
     #build imageCollection of SERVIR composites 
     servir_ic = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear']) 
@@ -198,15 +221,16 @@ def main(aoi,*args):
     new_collection = match_LT_to_servir(band_names,lt_fit_outputs,args)
     export_collection = rebuild_image_collection(num_bands,new_collection)
     #should return None 
-    output = export_imgs(export_collection,aoi,args)
+    output = export_imgs(export_collection,aoi,args,startYear=startYear,endYear=endYear)
 
 if __name__ == '__main__': 
     # aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
+
     aoi = ee.Geometry.Polygon(
-        [[[95.94936331685892, 18.817161691248636],
-          [95.94936331685892, 17.878671478111862],
-          [97.12490042623392, 17.878671478111862],
-          [97.12490042623392, 18.817161691248636]]])
+        [[[105.21924736250195, 14.414700359899358],
+          [105.21924736250195, 12.212492266993609],
+          [107.62525322187695, 12.212492266993609],
+          [107.62525322187695, 14.414700359899358]]])
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-        main(aoi,cfg)
+        main(aoi,cfg,startYear=2016,endYear=2020)
