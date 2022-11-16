@@ -203,7 +203,7 @@ def generate_point_grid (cluster_ids, resolution,PRJ = "EPSG:3857"):
         x = x + resolution
 
         # Append to the grid
-        grid.append(pt) #this was previously concat, that should be a js convention which we can change to append? 
+        grid.append(pt) 
 
     # Cast the grid as a feature collection
     output = ee.FeatureCollection(grid).sort('cluster_id')
@@ -372,7 +372,7 @@ def getPoint2(geom, img, z):
                             scale = z) #.getInfo()
 
 def runLTversionsHelper2(feature,selectedParams, indexName):
-    return feature.set('index', indexName).set('params',selectedParams).set('param_num', selectedParams['param_num']) #TODO note the zero is just a filler!!!
+    return feature.set('index', indexName).set('params',selectedParams).set('param_num', selectedParams['param_num']) 
 
 def runLTversionsHelper(param,indexName,id_points):
     # this statment finds the index of the parameter being used
@@ -810,7 +810,7 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
 
     SNICmeans = SNICpixels.toInt32().clip(aoi) # previously SNIC_means_image
 
-    # try just creating some random points
+    #create some random points
     snicPts = ee.FeatureCollection.randomPoints(
         region= aoi,
         points= random_pts,

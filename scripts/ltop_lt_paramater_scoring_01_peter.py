@@ -538,13 +538,13 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 
 def ClusterPointCalc2(dframe, clusterPoint_id):
 
-    these = dframe[(dframe['cluster_id']==clusterPoint_id) & (dframe['selected']==101)] #commented out the second part
+    these = dframe[(dframe['cluster_id']==clusterPoint_id)] #& (dframe['selected']==101)] #commented out the second part
 
-    firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
+    #firstOfthese = these#.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
 
     #print(firstOfthese)
 
-    return firstOfthese        
+    return these        
 
 def generate_selected_params(*args):#csv_dir,njobs,output_file): 
 	args = args[0]
@@ -584,7 +584,7 @@ if __name__ == '__main__':
 			 'njobs':8,
 			 'startYear':1990,
 			 'endYear':2021,
-			 'outfile':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/python_implementation_testing.csv'
+			 'outfile':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/python_implementation_testing_peter.csv'
 			 })
 
 	generate_selected_params(params)
