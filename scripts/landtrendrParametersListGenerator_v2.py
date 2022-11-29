@@ -30,7 +30,7 @@ for seg in Segments:
 
 
 # make empty list. this will parameters appended to it
-parameterDicList = []
+runParams = []
 counter = 0
 counter_list = []
 
@@ -47,9 +47,3 @@ for subList in list:
     counter += 1
 
 # end iterator 
-#print(parameterDicList)
-
-df = pd.DataFrame(zip(counter_list, parameterDicList),columns =['Param_num', 'Parameter'])
-
-ltparams = df.to_dict(orient="records")
-print(lt_params)
