@@ -34,7 +34,7 @@ runParams = []
 counter = 0
 counter_list = []
 
-# iterator 
+# iterator to asign parameters to dictionary
 for subList in list:
 
 # asign each parameter to template 
