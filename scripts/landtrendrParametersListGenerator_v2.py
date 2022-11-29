@@ -1,6 +1,8 @@
 #imports 
 import pandas as pd	
-
+import ee
+# Initialize the library.
+ee.Initialize()
 
 # This script is designed to create a list of landTrendr parameters varations. The parameter varations 
 # are drawn from lists of parameter values.
@@ -45,9 +47,9 @@ for subList in list:
     counter += 1
 
 # end iterator 
-print(parameterDicList)
+#print(parameterDicList)
 
 df = pd.DataFrame(zip(counter_list, parameterDicList),columns =['Param_num', 'Parameter'])
 
-lt_params = df.to_dict(orient="records")
+ltparams = df.to_dict(orient="records")
 print(lt_params)
