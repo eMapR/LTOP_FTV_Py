@@ -24,7 +24,7 @@ for seg in Segments:
             for pv in pValue:
                 newlist = [seg,ske,rec,pv]
                 list.append(newlist)
-                print('newlist', newlist)
+                #print('newlist', newlist)
 
 
 
@@ -37,12 +37,11 @@ counter_list = []
 # iterator 
 for subList in list:
 
-
 # asign each parameter to template 
     ltParamTemplate = "{timeSeries: ee.ImageCollection([]), maxSegments: "+str(subList[0])+" , spikeThreshold: "+str(subList[1])+", vertexCountOvershoot: 3, preventOneYearRecovery: true, recoveryThreshold: "+str(subList[2])+", pvalThreshold: "+str(subList[3])+", bestModelProportion: 0.75, minObservationsNeeded: "+str(subList[0])+", lt_param_id: "+str(counter)+" }"
 
 # append completed parameters dicionary to emtpy list 
-    parameterDicList.append(ltParamTemplate)
+    runParams.append(ltParamTemplate)
     counter_list.append(counter)
     counter += 1
 
