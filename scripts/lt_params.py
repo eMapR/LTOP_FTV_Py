@@ -8,9 +8,6 @@ ee.Initialize()
 # are drawn from lists of parameter values.
 
 
-# output file path (txt file)
-outFile = ""
-
 # list of parameter confingations
 Segments = [6,8,10,11]
 spike = [0.75,0.90,1.0]
