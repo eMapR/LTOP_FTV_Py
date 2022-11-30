@@ -1,12 +1,12 @@
-run_times: 'multiple'
-place: 'countries_plus'
+run_times: 'single'
+place: 'Cambodia_200'
 startYear: 1990
 endYear: 2021
 seedSpacing: 10
 randomPts: 20000
 image_source: 'servir'
 assetsRoot: 'projects/ee-ltop-py/assets/'
-assetsChild: 'LTOP_py_countries_plus'
+assetsChild: 'LTOP_py_Cambodia_200'
 aoi: 'None'    
 maxClusters: 200
 minClusters: 200

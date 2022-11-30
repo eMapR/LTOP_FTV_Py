@@ -413,7 +413,7 @@ def runLTversionsHelper(param,indexName,id_points):
     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
 
     # extract a LandTrendr pixel time series at a point
-    getpin2 = getPoint2(id_points, lt_images,20)  # add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
+    getpin2 = getPoint2(id_points, lt_images,20)  #scale changed from 20 to 30 BRP add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
 
     # maps over a feature collection that holds the LandTrendr data and adds attributes: index, params and param number.
 
@@ -437,7 +437,7 @@ def runLTversions(ic, indexName, id_points):
     df['timeseries'] = None
     df["timeseries"] = ee.ImageCollection(ic.select([indexName]))
     #this was previously an index, not sure if its actually needed but just replicate it as it was
-    df['param_num'] = range(df.shape[0])
+    # df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
     printer = [runLTversionsHelper(x,indexName,id_points) for x in dictParams]
     # printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]

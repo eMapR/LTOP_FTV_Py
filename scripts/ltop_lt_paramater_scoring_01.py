@@ -370,7 +370,7 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 	unique_clusters = sorted(df.cluster_id.unique())
 	
 	# change the breakpoint array to columns in dataframe
-	#arr_to_col(df,startYear,endYear)
+	arr_to_col(df,startYear,endYear)
 
 	#find the unique indices
 	indices = set(df['index'])
@@ -579,15 +579,15 @@ def generate_selected_params(*args):#csv_dir,njobs,output_file):
 #######################################################################################################################################################
 #######################################################################################################################################################
 #######################################################################################################################################################
-if __name__ == '__main__':
-	params = ({'param_scoring_inputs':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/cambodia_troubleshooting_tc/',
-			 'njobs':8,
-			 'startYear':1990,
-			 'endYear':2021,
-			 'outfile':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/python_implementation_testing.csv'
-			 })
+# if __name__ == '__main__':
+# 	params = ({'param_scoring_inputs':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/cambodia_troubleshooting_tc/',
+# 			 'njobs':8,
+# 			 'startYear':1990,
+# 			 'endYear':2021,
+# 			 'outfile':'/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/python_implementation_testing.csv'
+# 			 })
 
-	generate_selected_params(params)
+# 	generate_selected_params(params)
 
 # 	### new user args ###
 # 	input_dir = "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/output_04_lt_runs/"
