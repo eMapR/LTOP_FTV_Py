@@ -389,20 +389,19 @@ def fillZeroRMSE(rmse_img,source_img,fit_img,startYear,endYear):
     rmse_img = ee.Image(rmse_img)
     mask = rmse_img.eq(0)
     bands = [f'yr_{n}' for n in range(startYear,endYear+1)]
-
     source_img = convertArr(ee.Image(source_img),bands,mask)
     fit_img = convertArr(ee.Image(fit_img),bands,mask)
-
+ 
     #now calculate new RMSE
     diff = source_img.subtract(fit_img)
     diff = diff.pow(2) #TODO double check that we want to square this whole thing? or just a single difference?
     arr_sum = diff.arrayReduce(ee.Reducer.sum(),[0])
+    arr_sum = arr_sum.divide(diff.arrayLength(0)) #TODO double check that this is right
     rmse = arr_sum.sqrt()
     #this is still an array image so we have to convert back to img
-    rmse = rmse.arrayProject([0]).arrayFlatten(['rmse'])
+    rmse_img = rmse.arrayProject([0]).arrayFlatten([['rmse']])
     #now go back and update the 0 value locations in the RMSE image
-    return rmse_img.updateMask(rmse_img.neq(0)).unmask(rmse)
-
+    return ee.Image(rmse_img.updateMask(ee.Image(rmse_img.neq(0))).unmask(rmse_img))
 
 def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     # this statment finds the index of the parameter being used
@@ -437,14 +436,30 @@ def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
 
     vertexMask = ltlt.arraySlice(0, 3, 4).rename(['vert'])
 
-    rmse = fillZeroRMSE(lt.select(['rmse']),sourceArray,fittedArray,startYear,endYear)
-
     #fill in rmse values of zero that result from the GEE implementation of LT
-
+    rmse = fillZeroRMSE(lt.select(['rmse']),sourceArray,fittedArray,startYear,endYear).toArray()
+    # rmse = rmse.select(['rmse'])
 
     # place each array into a image stack one array per band
     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
 
+    # #add an aoi for testing
+    # aoi = ee.Geometry.Polygon(
+    #     [[[104.35274437489917, 13.834579257069725],
+    #       [104.35274437489917, 13.747888760904075],
+    #       [104.62053612294605, 13.747888760904075],
+    #       [104.62053612294605, 13.834579257069725]]])
+
+    # task = ee.batch.Export.image.toAsset(
+    #         image= lt_images,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+    #         description= indexName+'_testing_lt_images',
+    #         assetId='projects/ee-ltop-py/assets/ltop_image_testing/'+indexName+'_testing_lt_images',
+    #         region = aoi,
+    #         scale=30
+            
+    #     )
+
+    # task.start()
     # extract a LandTrendr pixel time series at a point
     getpin2 = getPoint2(id_points, lt_images,20)  #scale changed from 20 to 30 BRP add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
 
@@ -469,13 +484,13 @@ def runLTversions(ic, indexName, id_points,startYear,endYear):
         # fullParams[index]["timeseries"] = ic.select([indexName])
     # df['timeseries'] = None
     df['timeseries'] = ee.ImageCollection(ic.select([indexName]))
-    print('The DF looks like: ')
-    print('==========================================')
-    print(df)
+    # print('The DF looks like: ')
+    # print('==========================================')
+    # print(df)
     #this was previously an index, replicate it as it was
     # df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
-    print(dictParams)
+    # print(dictParams)
     printer = [runLTversionsHelper(x,indexName,id_points,startYear,endYear) for x in dictParams]
     # printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
     # printer = runParams.map(runLTversionsHelper)
@@ -491,8 +506,10 @@ def mergeLToutputs(lt_outputs):
     for i in range(len(lt_outputs)):
         if i == 0:
             featCol = lt_outputs[0]
+            print('doing the 0th element')
         elif i > 0 :
             featCol = featCol.merge(lt_outputs[i])
+            print('something else')
 
     return featCol
 
@@ -895,6 +912,7 @@ def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, sta
 
     # add spectral indices to the annual ic
     images_w_indices = computeIndices(full_timeseries)
+    #TODO add an indexFlipper so make sure that TCW and TCG gets flipped
 
     #this is set up to just trigger the creation of the abstract images 
     abstractImageOutputs = generate_abstract_images(images_w_indices,kMeansPts,assets_folder,grid_res,startYear,endYear,place)
