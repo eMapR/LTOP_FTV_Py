@@ -25,6 +25,6 @@ def run_LT_abstract_imgs(*args):
     abstract_output03_2 = ltop.abstractSampler03_2(abstractImagesPath,args['startYear'],args['endYear']) 
     
     # 4. get Landsat values for the points in the abstract images. This will automatically generate csvs in your GCS bucket
-    ltop.abstractImager04(abstract_output03_2, args['place'],abstractImagesPts,args['cloud_bucket']) 
+    ltop.abstractImager04(abstract_output03_2, args['place'],abstractImagesPts,args['cloud_bucket'],args['startYear'],args['endYear']) 
 
     return None
