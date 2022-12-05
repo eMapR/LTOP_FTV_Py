@@ -357,7 +357,6 @@ def addTimeStamp(image):
 
     return image.set('system:time_start', date)
 
-
 # Update the mask to remove the no - data values so they don 't mess
 # up running LandTrendr - - assumes the no - data value is -32768
 
@@ -387,21 +386,20 @@ def fillZeroRMSE(rmse_img,source_img,fit_img,startYear,endYear):
     and it would have to be for each index.
     '''
     rmse_img = ee.Image(rmse_img)
-    mask = rmse_img.eq(0)
-    bands = [f'yr_{n}' for n in range(startYear,endYear+1)]
-    source_img = convertArr(ee.Image(source_img),bands,mask)
-    fit_img = convertArr(ee.Image(fit_img),bands,mask)
+    # mask = rmse_img.eq(0)
+    # bands = [f'yr_{n}' for n in range(startYear,endYear+1)]
+    # source_img = convertArr(source_img,bands,mask)
+    # fit_img = convertArr(fit_img,bands,mask)
  
     #now calculate new RMSE
-    diff = source_img.subtract(fit_img)
-    diff = diff.pow(2) #TODO double check that we want to square this whole thing? or just a single difference?
-    arr_sum = diff.arrayReduce(ee.Reducer.sum(),[0])
-    arr_sum = arr_sum.divide(diff.arrayLength(0)) #TODO double check that this is right
-    rmse = arr_sum.sqrt()
+    diff = source_img.subtract(fit_img).pow(2)
+    arr_sum = diff.arrayReduce(ee.Reducer.sum(),[1])
+    rmse = arr_sum.divide(diff.arrayLength(1)).sqrt().arrayProject([0]).arrayFlatten([['rmse']]) #TODO double check that this is right
+    # rmse = arr_sum.sqrt()
     #this is still an array image so we have to convert back to img
-    rmse_img = rmse.arrayProject([0]).arrayFlatten([['rmse']])
+    # rmse_img = rmse.arrayProject([0]).arrayFlatten([['rmse']])
     #now go back and update the 0 value locations in the RMSE image
-    return ee.Image(rmse_img.updateMask(ee.Image(rmse_img.neq(0))).unmask(rmse_img))
+    return ee.Image(rmse_img.updateMask(rmse_img.neq(0)).unmask(ee.Image(rmse)))
 
 def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     # this statment finds the index of the parameter being used
@@ -437,7 +435,7 @@ def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     vertexMask = ltlt.arraySlice(0, 3, 4).rename(['vert'])
 
     #fill in rmse values of zero that result from the GEE implementation of LT
-    rmse = fillZeroRMSE(lt.select(['rmse']),sourceArray,fittedArray,startYear,endYear).toArray()
+    rmse = fillZeroRMSE(lt.select(['rmse']),sourceArray,fittedArray,startYear,endYear)#.toArray()
     # rmse = rmse.select(['rmse'])
 
     # place each array into a image stack one array per band
@@ -469,6 +467,17 @@ def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
 
     return attriIndexToData
 
+def flip_index(ic,indexName): 
+    '''
+    Apply the LandTrendr indexFlipper function. TODO there is probably already some code to do this. 
+    '''
+    #this will return an item from a dictionary that looks like {'INDEX':flip} with flip being 1 or -1. 
+    flip = ltgee.indexFlipper(indexName)
+    print('The index thing looks like: ')
+    print(flip)
+
+    return ic.map(lambda i: ee.Image(i).multiply(ee.Number(flip)).set('system:time_start',i.get('system:time_start')))
+
 def runLTversions(ic, indexName, id_points,startYear,endYear):
     # here we map over each LandTrendr parameter ation, appslying eachation to the abstract image
     #TODO its not entirely clear what's going on here but a list can't be mapped over apparently so it was changed to a list comprehension
@@ -483,10 +492,13 @@ def runLTversions(ic, indexName, id_points,startYear,endYear):
     # LT configs with a different fitting index and then go onto the next fitting index 
         # fullParams[index]["timeseries"] = ic.select([indexName])
     # df['timeseries'] = None
-    df['timeseries'] = ee.ImageCollection(ic.select([indexName]))
-    # print('The DF looks like: ')
-    # print('==========================================')
-    # print(df)
+    #insert a little code here to flip the indices that need to be flipped
+    #TODO decide if this is where this should go or if it would be better to put it up in the abstract images
+    corrected_ic = flip_index(ee.ImageCollection(ic.select([indexName])),indexName)
+    # corrected_ic = corrected_ic.map(addTimeStamp)
+
+    df['timeseries'] = corrected_ic#ee.ImageCollection(ic.select([indexName]))#corrected_ic
+    
     #this was previously an index, replicate it as it was
     # df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
@@ -951,7 +963,6 @@ def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket,startYear,en
     # abstractImagesIC = abstractImagesIC.select(['b1', 'b2', 'b3', 'b4', 'b5'], indices) # changed to uppercase
  
     for i in range(len(indices)):
-        # print(indices[i])
         # this calls the printer function that runs different versions of landTrendr
         multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points,startYear,endYear)
         
