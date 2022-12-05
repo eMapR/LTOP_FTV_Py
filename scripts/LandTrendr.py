@@ -215,6 +215,33 @@ def calc_bands(img,bandList):
 def transformSRcollection(srCollection, bandList): 
     return srCollection.map(lambda x: calc_bands(x,bandList))
 ####################################################################################
+#INDEX FLIPPER
+def indexFlipper(index):
+  indexObj = {
+    'NBR': -1,
+    'NDVI': -1,
+    'NDSI': -1,  # ???? this is a tricky one
+    'NDMI': -1,
+    'EVI': -1,  
+    'TCB': 1,
+    'TCG': -1,
+    'TCW': -1,
+    'TCA': -1,
+    'B1': 1,
+    'B2': 1,
+    'B3': 1,
+    'B4': -1,
+    'B5': 1,
+    'B7': 1,
+    'ENC': 1,
+    'ENC1': 1,
+    'TCC': 1,  
+    'NBRz': 1,
+    'B5z': 1
+  }
+  return indexObj[index]
+####################################################################################
+
 #code to build LT collection with calculated indices 
 # STANDARDIZE A INDEX INDEX - all disturbances are up
 def standardize_helper1(img,mean): 

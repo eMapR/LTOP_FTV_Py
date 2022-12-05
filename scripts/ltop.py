@@ -150,31 +150,31 @@ def selectKmeansPts(img, aoi):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 
 #TODO note that this could probably be changed to the LandTrendr.py version. It was taken from there
-def computeIdnices_helper(img):
-    '''
-    Calculate Tasseled Cap Brightness, Greenness, Wetness
-    '''
-    bands = img.select(['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
+# def computeIdnices_helper(img):
+#     '''
+#     Calculate Tasseled Cap Brightness, Greenness, Wetness
+#     '''
+#     bands = img.select(['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
 
-    coefficients = ee.Array([
-        [0.2043, 0.4158, 0.5524, 0.5741, 0.3124, 0.2303],
-        [-0.1603, -0.2819, -0.4934, 0.7940, -0.0002, -0.1446],
-        [0.0315, 0.2021, 0.3102, 0.1594, -0.6806, -0.6109],
-    ])
+#     coefficients = ee.Array([
+#         [0.2043, 0.4158, 0.5524, 0.5741, 0.3124, 0.2303],
+#         [-0.1603, -0.2819, -0.4934, 0.7940, -0.0002, -0.1446],
+#         [0.0315, 0.2021, 0.3102, 0.1594, -0.6806, -0.6109],
+#     ])
 
-    components = ee.Image(coefficients).matrixMultiply(bands.toArray().toArray(1)).arrayProject([0]).arrayFlatten([['TCB', 'TCG', 'TCW']]).toFloat()
+#     components = ee.Image(coefficients).matrixMultiply(bands.toArray().toArray(1)).arrayProject([0]).arrayFlatten([['TCB', 'TCG', 'TCW']]).toFloat()
 
-    img = img.addBands(components)
+#     img = img.addBands(components)
 
-    # Compute NDVI and NBR
-    img = img.addBands(img.normalizedDifference(['B4', 'B3']).toFloat().rename(['NDVI']).multiply(1000))
-    img = img.addBands(img.normalizedDifference(['B4', 'B7']).toFloat().rename(['NBR']).multiply(1000))
+#     # Compute NDVI and NBR
+#     img = img.addBands(img.normalizedDifference(['B4', 'B3']).toFloat().rename(['NDVI']).multiply(1000))
+#     img = img.addBands(img.normalizedDifference(['B4', 'B7']).toFloat().rename(['NBR']).multiply(1000))
 
-    return img.select(['NBR', 'TCW', 'TCG', 'NDVI', 'B5']).toFloat()
+#     return img.select(['NBR', 'TCW', 'TCG', 'NDVI', 'B5']).toFloat()
 
-def computeIndices(ic):
-
-    output_ic = ic.map(computeIdnices_helper)
+def computeIndices(ic, indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']):
+    #TODO not 100% sure this is formatted correctly 
+    output_ic = ltgee.transformSRcollection(ic,indices)#ic.map(computeIdnices_helper)
 
     return output_ic
 
@@ -357,7 +357,6 @@ def addTimeStamp(image):
 
     return image.set('system:time_start', date)
 
-
 # Update the mask to remove the no - data values so they don 't mess
 # up running LandTrendr - - assumes the no - data value is -32768
 
@@ -374,7 +373,35 @@ def getPoint2(geom, img, z):
 def runLTversionsHelper2(feature,selectedParams, indexName):
     return feature.set('index', indexName).set('params',selectedParams).set('param_num', selectedParams['param_num']) 
 
-def runLTversionsHelper(param,indexName,id_points):
+def convertArr(arr_img,bands,mask): 
+    #sometimes the source and fitted are different sizes, this will mess things up with array masking so do it as a multiband image then go back to array
+    img = arr_img.arrayProject([0]).arrayFlatten([bands])
+    #mask then convert back to an array image
+    return img.updateMask(mask).toArray()
+
+def fillZeroRMSE(rmse_img,source_img,fit_img,startYear,endYear): 
+    '''
+    Take the RMSE band of LT output from GEE and recalculate any instances where RMSE == 0. 
+    The RMSE would jsut be to difference all of the years source minus fitted, square the entire vector, add it up and then take the square root.
+    and it would have to be for each index.
+    '''
+    rmse_img = ee.Image(rmse_img)
+    # mask = rmse_img.eq(0)
+    # bands = [f'yr_{n}' for n in range(startYear,endYear+1)]
+    # source_img = convertArr(source_img,bands,mask)
+    # fit_img = convertArr(fit_img,bands,mask)
+ 
+    #now calculate new RMSE
+    diff = source_img.subtract(fit_img).pow(2)
+    arr_sum = diff.arrayReduce(ee.Reducer.sum(),[1])
+    rmse = arr_sum.divide(diff.arrayLength(1)).sqrt().arrayProject([0]).arrayFlatten([['rmse']]) #TODO double check that this is right
+    # rmse = arr_sum.sqrt()
+    #this is still an array image so we have to convert back to img
+    # rmse_img = rmse.arrayProject([0]).arrayFlatten([['rmse']])
+    #now go back and update the 0 value locations in the RMSE image
+    return ee.Image(rmse_img.updateMask(rmse_img.neq(0)).unmask(ee.Image(rmse)))
+
+def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     # this statment finds the index of the parameter being used
     # index = fullParams.index(param)
 
@@ -407,11 +434,30 @@ def runLTversionsHelper(param,indexName,id_points):
 
     vertexMask = ltlt.arraySlice(0, 3, 4).rename(['vert'])
 
-    rmse = lt.select(['rmse'])
+    #fill in rmse values of zero that result from the GEE implementation of LT
+    rmse = fillZeroRMSE(lt.select(['rmse']),sourceArray,fittedArray,startYear,endYear)#.toArray()
+    # rmse = rmse.select(['rmse'])
 
     # place each array into a image stack one array per band
     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
 
+    # #add an aoi for testing
+    # aoi = ee.Geometry.Polygon(
+    #     [[[104.35274437489917, 13.834579257069725],
+    #       [104.35274437489917, 13.747888760904075],
+    #       [104.62053612294605, 13.747888760904075],
+    #       [104.62053612294605, 13.834579257069725]]])
+
+    # task = ee.batch.Export.image.toAsset(
+    #         image= lt_images,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+    #         description= indexName+'_testing_lt_images',
+    #         assetId='projects/ee-ltop-py/assets/ltop_image_testing/'+indexName+'_testing_lt_images',
+    #         region = aoi,
+    #         scale=30
+            
+    #     )
+
+    # task.start()
     # extract a LandTrendr pixel time series at a point
     getpin2 = getPoint2(id_points, lt_images,20)  #scale changed from 20 to 30 BRP add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
 
@@ -421,25 +467,43 @@ def runLTversionsHelper(param,indexName,id_points):
 
     return attriIndexToData
 
-def runLTversions(ic, indexName, id_points):
+def flip_index(ic,indexName): 
+    '''
+    Apply the LandTrendr indexFlipper function. TODO there is probably already some code to do this. 
+    '''
+    #this will return an item from a dictionary that looks like {'INDEX':flip} with flip being 1 or -1. 
+    flip = ltgee.indexFlipper(indexName)
+    print('The index thing looks like: ')
+    print(flip)
+
+    return ic.map(lambda i: ee.Image(i).multiply(ee.Number(flip)).set('system:time_start',i.get('system:time_start')))
+
+def runLTversions(ic, indexName, id_points,startYear,endYear):
     # here we map over each LandTrendr parameter ation, appslying eachation to the abstract image
     #TODO its not entirely clear what's going on here but a list can't be mapped over apparently so it was changed to a list comprehension
     #first try converting the list to a fc
     # LTParams = ee.List(runParams.runParams).map(lambda x: ee.Feature(None,x))
     # LTParams = ee.FeatureCollection(LTParams)
+    param_list = runParams.generate_lt_param_combos()
+    df = pd.DataFrame.from_dict(param_list)#changed 12/1/22 BRP for on the fly generation ,index=range(len(runParams.runParams)))
     
-    df = pd.DataFrame.from_records(runParams.runParams)#,index=range(len(runParams.runParams)))
-
     #I think this was inserting an ic in each line of code but in this format we should be able 
     # to just fill the whole thing in one go because its going to run a bunch of differnt
     # LT configs with a different fitting index and then go onto the next fitting index 
         # fullParams[index]["timeseries"] = ic.select([indexName])
-    df['timeseries'] = None
-    df["timeseries"] = ee.ImageCollection(ic.select([indexName]))
-    #this was previously an index, not sure if its actually needed but just replicate it as it was
+    # df['timeseries'] = None
+    #insert a little code here to flip the indices that need to be flipped
+    #TODO decide if this is where this should go or if it would be better to put it up in the abstract images
+    corrected_ic = flip_index(ee.ImageCollection(ic.select([indexName])),indexName)
+    # corrected_ic = corrected_ic.map(addTimeStamp)
+
+    df['timeseries'] = corrected_ic#ee.ImageCollection(ic.select([indexName]))#corrected_ic
+    
+    #this was previously an index, replicate it as it was
     # df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
-    printer = [runLTversionsHelper(x,indexName,id_points) for x in dictParams]
+    # print(dictParams)
+    printer = [runLTversionsHelper(x,indexName,id_points,startYear,endYear) for x in dictParams]
     # printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
     # printer = runParams.map(runLTversionsHelper)
     # printer = df.apply(runLTversionsHelper,args=(ic,indexName,id_points))
@@ -454,8 +518,10 @@ def mergeLToutputs(lt_outputs):
     for i in range(len(lt_outputs)):
         if i == 0:
             featCol = lt_outputs[0]
+            print('doing the 0th element')
         elif i > 0 :
             featCol = featCol.merge(lt_outputs[i])
+            print('something else')
 
     return featCol
 
@@ -858,6 +924,7 @@ def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, sta
 
     # add spectral indices to the annual ic
     images_w_indices = computeIndices(full_timeseries)
+    #TODO add an indexFlipper so make sure that TCW and TCG gets flipped
 
     #this is set up to just trigger the creation of the abstract images 
     abstractImageOutputs = generate_abstract_images(images_w_indices,kMeansPts,assets_folder,grid_res,startYear,endYear,place)
@@ -882,7 +949,7 @@ def abstractSampler03_2(img_path, startYear, endYear):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # 04abstractImager # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket): 
+def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket,startYear,endYear): 
     # wrap this into a for loop
     indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']
 
@@ -896,9 +963,8 @@ def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket):
     # abstractImagesIC = abstractImagesIC.select(['b1', 'b2', 'b3', 'b4', 'b5'], indices) # changed to uppercase
  
     for i in range(len(indices)):
-        # print(indices[i])
         # this calls the printer function that runs different versions of landTrendr
-        multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points)
+        multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points,startYear,endYear)
         
         #DEPRECATED??
         # this merges the multiple LT runs
@@ -906,21 +972,21 @@ def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket):
 
         # then export the outputs - the paramater selection can maybe be done in GEE at some point but its
         # a big python script that needs to be translated into GEE
-        # task = ee.batch.Export.table.toDrive(
-        #     collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
-        #     selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
-        #     description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
-        #     folder= "LTOP_" + place + "_abstractImageSamples_c2",
-        #     fileFormat= 'CSV'
-        # )
-
-        task = ee.batch.Export.table.toCloudStorage(
-            collection = combinedLToutputs,
-            description = "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
-            bucket = gcs_bucket,
+        task = ee.batch.Export.table.toDrive(
+            collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
             selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
-            fileFormat = 'CSV'
+            description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+            folder= "LTOP_TESTING_" + place + "_abstractImageSamples_c2",
+            fileFormat= 'CSV'
         )
+
+        # task = ee.batch.Export.table.toCloudStorage(
+        #     collection = combinedLToutputs,
+        #     description = "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+        #     bucket = gcs_bucket,
+        #     selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
+        #     fileFormat = 'CSV'
+        # )
 
         task.start()
     return None
