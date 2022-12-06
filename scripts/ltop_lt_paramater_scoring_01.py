@@ -405,7 +405,7 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 
 	#First, extract the vertices as a numpy array to work with
 	column_names = df.columns
-	vs = [name for name in column_names if ('vert' in name) and (name != 'vert')]
+	vs = [name for name in column_names if ('vert' in name) and (name != 'vert') and (name != 'len_vert')]
 	verts_only = df[vs].values #convert to a numpy array
 		
 	
@@ -509,13 +509,13 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 	dfList = []
 	c = 0 
 	for i in unique_clusters:#list(range(number_of_clusters)):
-		c = c + 1
-		if c == 1 :
+		# c = c + 1
+		if c == 0 :
 			newDFpart = ClusterPointCalc(df,i,aicWeight,vScoreWeight)
 		else:
 			newDFpart2 = ClusterPointCalc(df,i,aicWeight,vScoreWeight)
 			dfList.append(newDFpart2)
-
+		c += 1
 	result = newDFpart.append(dfList)
 
 	df = result
@@ -524,8 +524,8 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 
 		addValuesToNewColumns(index, row,df)
 
-
-	# df.to_csv(output_file, index=False)
+	output_fn = '/vol/v1/proj/LTOP_FTV_Py/param_selection_testing_outputs/intermediate_testing_output_revised.csv'
+	df.to_csv(output_fn, index=False)
 	return df
 
 #this was previously from the 02 script and is now integrated here for ease. 
@@ -538,13 +538,17 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 
 def ClusterPointCalc2(dframe, clusterPoint_id):
 
-    these = dframe[(dframe['cluster_id']==clusterPoint_id) & (dframe['selected']==101)] #commented out the second part
+	these = dframe[(dframe['cluster_id']==clusterPoint_id) & (dframe['selected']==101)] #commented out the second part
+	print('These looks like: ')
+	print('==========================================================')
+	print(these)
+	print(these.shape)
+	print(these['index'].unique())
+	firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
 
-    firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
+	#print(firstOfthese)
 
-    #print(firstOfthese)
-
-    return firstOfthese        
+	return firstOfthese        
 
 def generate_selected_params(*args):#csv_dir,njobs,output_file): 
 	args = args[0]
@@ -554,9 +558,9 @@ def generate_selected_params(*args):#csv_dir,njobs,output_file):
 	#this was changed 3/8/2022 so that it iterates through the kmeans cluster ids and not a chronological list BRP
 	for i in sorted(df['cluster_id'].unique()):
 		# print('iteration is: ',i)
-		count = count + 1
+		# count = count + 1
 
-		if count == 1 :
+		if count == 0 :
 
 			newDFpart = ClusterPointCalc2(df,i)
 

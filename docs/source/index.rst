@@ -24,8 +24,7 @@ more appropriate to specific geographic areas. The process relies on the Google 
    Example run <examples.rst>
    Information on LTOP steps <ltop_steps.rst>
    Image stabilization <stabilization.rst>
-
-
+   LTOP testing <testing.rst>
 
 Indices and tables
 ==================
