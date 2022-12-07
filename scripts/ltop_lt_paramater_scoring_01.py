@@ -550,11 +550,11 @@ def get_max_mean(df1,col_name):
 def ClusterPointCalc2(dframe, clusterPoint_id):
 	all_clust = dframe.loc[dframe['cluster_id'] == clusterPoint_id]
 	these = dframe[(dframe['cluster_id']==clusterPoint_id) & (dframe['selected']==101)] #commented out the second part
-	print('These looks like: ')
-	print('==========================================================')
-	print(these)
-	print(these.shape)
-	print(these['index'].unique())
+	# print('These looks like: ')
+	# print('==========================================================')
+	# print(these)
+	# print(these.shape)
+	# print(these['index'].unique())
 
 	#right here we have ties and previously we were just taking the first row in the group of ties. 
 	#we want to implement a more robust and repeatable method for doing that 
@@ -574,7 +574,9 @@ def ClusterPointCalc2(dframe, clusterPoint_id):
 	df4 = df3.loc[df3.pvalThreshold == pval_select.pvalThreshold.iloc[0]]
 
 	# firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
-
+	print('the selected outputs are going to look like')
+	print('==============================================')
+	print(df4.shape)
 	return df4#firstOfthese        
 
 def generate_selected_params(*args):#csv_dir,njobs,output_file): 
