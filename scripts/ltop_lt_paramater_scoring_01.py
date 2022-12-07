@@ -535,20 +535,47 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 
 # df = pd.read_csv("/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/cambodia_troubleshooting_params_tc.csv")
 # outfile = '/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/selected_param_config_gee_implementation/LTOP_Cambodia_troubleshooting_selected_LT_params_tc.csv'
+def get_max_mean(df1,col_name): 
+    '''
+    Calculate the mean of the combined rankVscore and rankAICcscore, considering the weighting factors, 
+    for each possible value for a given param. Then take the max mean value. 
+    '''
+    #this assumes you've already subset by cluster_id as is the case in the param selection code 
+    #get the mean by possible param values 
+    df1 = pd.DataFrame(df1.groupby([col_name])['combined'].mean()).reset_index()
+    #get the max mean value for the given param 
+    df2 = df1.loc[df1['combined'] == df1['combined'].max()]
+    return df2
 
 def ClusterPointCalc2(dframe, clusterPoint_id):
-
+	all_clust = dframe.loc[dframe['cluster_id'] == clusterPoint_id]
 	these = dframe[(dframe['cluster_id']==clusterPoint_id) & (dframe['selected']==101)] #commented out the second part
 	print('These looks like: ')
 	print('==========================================================')
 	print(these)
 	print(these.shape)
 	print(these['index'].unique())
-	firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
 
-	#print(firstOfthese)
+	#right here we have ties and previously we were just taking the first row in the group of ties. 
+	#we want to implement a more robust and repeatable method for doing that 
+	#TODO not clear if this should indeed be all_clust or if we 
+	rec_select = get_max_mean(all_clust,'recoveryThreshold')
+	#next do spikeThreshold
+	spike_select = get_max_mean(all_clust,'spikeThreshold')
+	#then maxSegments
+	max_select = get_max_mean(all_clust,'maxSegments')
+	#then pvalThreshold 
+	pval_select = get_max_mean(all_clust,'pvalThreshold')
 
-	return firstOfthese        
+	#then do the sequential subsetting, starting with the full dataframe - in the actual code this is a subset of the df for the cluster
+	df1 = these.loc[these.recoveryThreshold == rec_select.recoveryThreshold.iloc[0]]
+	df2 = df1.loc[df1.spikeThreshold == spike_select.spikeThreshold.iloc[0]]
+	df3 = df2.loc[df2.maxSegments == max_select.maxSegments.iloc[0]]
+	df4 = df3.loc[df3.pvalThreshold == pval_select.pvalThreshold.iloc[0]]
+
+	# firstOfthese = these.head(1)[['cluster_id','index','params','spikeThreshold','maxSegments','recoveryThreshold','pvalThreshold']]
+
+	return df4#firstOfthese        
 
 def generate_selected_params(*args):#csv_dir,njobs,output_file): 
 	args = args[0]
