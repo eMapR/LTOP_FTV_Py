@@ -15,16 +15,16 @@ Identifying change based on existing LT modules
 -----------------------------------------------
 
 Existing code has been used to identify different types of change based on LT temporal segmentation, but focuses on single event identification (i.e., greatest, least disturbance) 
-for more information see the `existing description <https://emapr.github.io/LT-GEE/api.html#getchangemap>` on using this code. The general output of the LTOP workflow does not lend 
+for more information see the `existing description <https://emapr.github.io/LT-GEE/api.html#getchangemap>`_ on using this code. The general output of the LTOP workflow does not lend 
 itself to applying this code directly so we reformat those outputs to emulate the structure of the general LT outputs (4xn array image). Note that as of 12/12/2022 this only exists in 
 JS and has not been translated into Python. 
 
-1. Dependencies: `modules <https://github.com/eMapR/SERVIR_stabilization/blob/main/scripts/GEE_scripts/temp_stab_modules.js>`
+1. Dependencies: `modules <https://github.com/eMapR/SERVIR_stabilization/blob/main/scripts/GEE_scripts/temp_stab_modules.js>`_
 
-2. Script location: `change detection <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/change_detection_from_LTOP.js>`
+2. Script location: `change detection <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/change_detection_from_LTOP.js>`_
 
 
-3. Copy and paste script text into GEE JavaScript API or you can access the scripts of the same name in the `GEE repo <https://code.earthengine.google.com/?accept_repo=users/ak_glaciers/adpc_servir_LTOP>`
+3. Copy and paste script text into GEE JavaScript API or you can access the scripts of the same name in the `GEE repo <https://code.earthengine.google.com/?accept_repo=users/ak_glaciers/adpc_servir_LTOP>`_
 
 4. This script requires some of the outputs of the LTOP workflow. There is additional description of these inputs in the script header and in other documentation in this repo. Change these 
 to reflect the LTOP run you are interested in using in lines 77-81 in the JS version. 
@@ -47,9 +47,9 @@ Vertex-based change
 
 This approach to change detection leverages the information inherent in the LT segmentation process. It leverages the identification of 'breakpoint' or vertex years by the LT algorithm and then expands on that to attribute all years in the time series with some information about the relationship between a given year and temporally adjacent vertices. 
 
-1. Dependencies: `modules <https://github.com/eMapR/SERVIR_stabilization/blob/main/scripts/GEE_scripts/temp_stab_modules.js>`
+1. Dependencies: `modules <https://github.com/eMapR/SERVIR_stabilization/blob/main/scripts/GEE_scripts/temp_stab_modules.js>`_
 
-2. Script location: `vertices change detection <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/vertex_based_change_detection.js>`
+2. Script location: `vertices change detection <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/vertex_based_change_detection.js>`_
 
 3. Copy and paste script text into GEE JavaScript API 
 
@@ -74,7 +74,7 @@ This process relies on a target understanding of canopy cover from an existing d
 relationship with a single predictor variable (NBR or NDVI) and the target layer. The modeling is done with reduced major axis (RMA) regression (Cohen et al., 20XX). 
 The output of this process is a time series of canopy cover information with maps characterizing canopy cover every year on a 0-100 scale. 
 
-	1. Script location: `RMA canopy cover <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/rma_based_canopy_cover.js>`
+	1. Script location: `RMA canopy cover <https://github.com/eMapR/LTOP_FTV/blob/master/scripts/change_detection_from_LTOP/rma_based_canopy_cover.js>`_
 
 	2. This script has a few user defined inputs, a description of those inputs is included in the script header. 
 
