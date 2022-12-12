@@ -787,7 +787,6 @@ def runLTfit(table,input_ic,breakpoints,kmeans_image,min_obvs):
   
     #run LandTrendr
     masked_ic = spike_masks.map(lambda msk: runLTfit_mask_helper(msk,input_ic,breakpoints,min_obvs))
-    
   
     #combine the masked versions of LT into an image
     combined = masked_ic.mosaic() 
