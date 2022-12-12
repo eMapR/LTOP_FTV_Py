@@ -14,7 +14,7 @@ import LandTrendr as ltgee
 from google.cloud import storage
 import subprocess
 
-version = '0.1.1'
+version = '0.1.2'
 print('LTOP version: ', version)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -478,7 +478,7 @@ def flip_index(ic,indexName):
 
     return ic.map(lambda i: ee.Image(i).multiply(ee.Number(flip)).set('system:time_start',i.get('system:time_start')))
 
-def runLTversions(ic, indexName, id_points,startYear,endYear):
+def runLTversions(ic, indexName, id_points,startYear,endYear,imageSource):
     # here we map over each LandTrendr parameter ation, appslying eachation to the abstract image
     #TODO its not entirely clear what's going on here but a list can't be mapped over apparently so it was changed to a list comprehension
     #first try converting the list to a fc
@@ -494,11 +494,11 @@ def runLTversions(ic, indexName, id_points,startYear,endYear):
     # df['timeseries'] = None
     #insert a little code here to flip the indices that need to be flipped
     #TODO decide if this is where this should go or if it would be better to put it up in the abstract images
-    corrected_ic = flip_index(ee.ImageCollection(ic.select([indexName])),indexName)
-    # corrected_ic = corrected_ic.map(addTimeStamp)
-
-    df['timeseries'] = corrected_ic#ee.ImageCollection(ic.select([indexName]))#corrected_ic
-    
+    if imageSource.lower() == 'servir': 
+        corrected_ic = flip_index(ee.ImageCollection(ic.select([indexName])),indexName)
+        df['timeseries'] = corrected_ic#ee.ImageCollection(ic.select([indexName]))#corrected_ic
+    else: 
+        df['timeseries'] = ee.ImageCollection(ic.select([indexName]))
     #this was previously an index, replicate it as it was
     # df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
@@ -518,10 +518,8 @@ def mergeLToutputs(lt_outputs):
     for i in range(len(lt_outputs)):
         if i == 0:
             featCol = lt_outputs[0]
-            print('doing the 0th element')
         elif i > 0 :
             featCol = featCol.merge(lt_outputs[i])
-            print('something else')
 
     return featCol
 
@@ -949,7 +947,7 @@ def abstractSampler03_2(img_path, startYear, endYear):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # 04abstractImager # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket,startYear,endYear): 
+def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket, startYear,endYear,testing,imageSource): 
     # wrap this into a for loop
     indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']
 
@@ -964,29 +962,29 @@ def abstractImager04(abstractImagesIC, place, id_points, gcs_bucket,startYear,en
  
     for i in range(len(indices)):
         # this calls the printer function that runs different versions of landTrendr
-        multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points,startYear,endYear)
+        multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points,startYear,endYear,imageSource)
         
-        #DEPRECATED??
         # this merges the multiple LT runs
         combinedLToutputs = mergeLToutputs(multipleLToutputs)
 
         # then export the outputs - the paramater selection can maybe be done in GEE at some point but its
         # a big python script that needs to be translated into GEE
-        task = ee.batch.Export.table.toDrive(
-            collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
-            selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
-            description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
-            folder= "LTOP_TESTING_" + place + "_abstractImageSamples_c2",
-            fileFormat= 'CSV'
-        )
-
-        # task = ee.batch.Export.table.toCloudStorage(
-        #     collection = combinedLToutputs,
-        #     description = "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
-        #     bucket = gcs_bucket,
-        #     selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
-        #     fileFormat = 'CSV'
-        # )
+        if testing.lower() == 'true':  
+            task = ee.batch.Export.table.toDrive(
+                collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+                selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
+                description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+                folder= "LTOP_TESTING_" + place + "_abstractImageSamples_c2",
+                fileFormat= 'CSV'
+            )
+        else: 
+            task = ee.batch.Export.table.toCloudStorage(
+                collection = combinedLToutputs,
+                description = "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
+                bucket = gcs_bucket,
+                selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
+                fileFormat = 'CSV'
+            )
 
         task.start()
     return None

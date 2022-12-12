@@ -28,8 +28,9 @@ seedSpacing: int
 randomPts: int  
 	The number of random points we use to sample the SNIC imagery. There is not a best known value but generally more is better. Default is 20,000. 
 	You can try more, we don't necessarily recommend less but this depends on the area you are running. This seemed sufficient for an area the size of SE Asia.  
-imageSource: str  
- One of either 'servir' or 'medoid'. The default is that anything not specified as medoid will choose servir composites. Note that as of 10/18/2022 the functionality for medoids does not currently exist.  
+image_source: str  
+ 	One of either 'servir' or 'medoid'. The default is that anything not specified as medoid will choose servir composites. Note that as of 10/18/2022 the functionality for medoids does not currently exist.  
+ 	If you set this to 'servir' it is IMPORTANT to know that the code is going to apply the indexFlipper function from LandTrendr.py and flip certain indices to ensure that disturbance trajectories trend down (i.e. TCW will be multipled by -1).    
 assetsRoot: str  
 	Defined from assetsRoot variable above.  
 assetsChild: str  
@@ -52,7 +53,11 @@ njobs: int
 	Number of cores to use in param selection. This will likely be changed in future versions.    
 cloud_bucket: str, GCS cloud bucket name  
 	This is the name of a cloud bucket in a Google Cloud Services account. See notes in `general setup <general_setup.rst>` for setting this up. Note that the program will not do this for you, 
-	you need to manually do this in advance of running or you will hit an error. 
+	you need to manually do this in advance of running or you will hit an error.     
+testing: str
+	This was added in the most recent version. It is only really needed to testing and should generally be set to 'false'. 
+	Setting to true will export LandTrendr runs for each index to Google Drive instead of GCS. This argument may become deprecated 
+	in future versions or could be used for a more robust 'testing mode'. 
 
 NOTE that as of 10/18/2022, the necessary code to run medoid composites does not yet exist. When that is done, the below args will be required to generate medoid composites from existing LandTrendr modules.   
 startDate: str    

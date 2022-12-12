@@ -163,7 +163,7 @@ def export_imgs(output_collection,aoi,*args,startYear=None,endYear=None):
         task = ee.batch.Export.image.toAsset(
             image = out_img, 
             description = "servir_"+yr_str+"_stabilized_"+args['place'], 
-            assetId = args['assetsRoot']+args['assetsChild']+"/servir_"+yr_str+"_stabilized_"+args['place'], 
+            assetId = args['assetsRoot']+args['assetsChild']+"/servir_"+yr_str+"_stabilized_"+args['place']+'_cardamon_mtns', 
             region = aoi, 
             scale = 30, 
             maxPixels = 1e13 
@@ -225,12 +225,18 @@ def main(aoi,*args,startYear=None,endYear=None):
 
 if __name__ == '__main__': 
     # aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
-
+    #aoi for original testing reservoir
+    # aoi = ee.Geometry.Polygon(
+    #     [[[105.21924736250195, 14.414700359899358],
+    #       [105.21924736250195, 12.212492266993609],
+    #       [107.62525322187695, 12.212492266993609],
+    #       [107.62525322187695, 14.414700359899358]]])
+    #cardamon mountains
     aoi = ee.Geometry.Polygon(
-        [[[105.21924736250195, 14.414700359899358],
-          [105.21924736250195, 12.212492266993609],
-          [107.62525322187695, 12.212492266993609],
-          [107.62525322187695, 14.414700359899358]]])
+        [[[102.68464677517353, 12.378508282969571],
+          [102.68464677517353, 11.028422191940491],
+          [104.87641923611103, 11.028422191940491],
+          [104.87641923611103, 12.378508282969571]]])
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
         main(aoi,cfg,startYear=2016,endYear=2020)
