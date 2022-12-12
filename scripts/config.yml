@@ -14,7 +14,7 @@ param_scoring_inputs: "/vol/v1/proj/LTOP_FTV_Py/"
 outfile: "/vol/v1/proj/LTOP_FTV_Py/selected_lt_params/"
 njobs: 8
 cloud_bucket: "ltop_assets_storage"
-testing: "true"
+testing: "false"
     
 # only needed for medoid composites
 startDate: '11-20'

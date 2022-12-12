@@ -14,7 +14,7 @@ import LandTrendr as ltgee
 from google.cloud import storage
 import subprocess
 
-version = '0.1.1'
+version = '0.1.2'
 print('LTOP version: ', version)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -518,10 +518,8 @@ def mergeLToutputs(lt_outputs):
     for i in range(len(lt_outputs)):
         if i == 0:
             featCol = lt_outputs[0]
-            print('doing the 0th element')
         elif i > 0 :
             featCol = featCol.merge(lt_outputs[i])
-            print('something else')
 
     return featCol
 

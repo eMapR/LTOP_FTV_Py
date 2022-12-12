@@ -25,6 +25,7 @@ more appropriate to specific geographic areas. The process relies on the Google 
    Information on LTOP steps <ltop_steps.rst>
    LTOP testing <testing.rst>
    Image stabilization <stabilization.rst>
+   Change detection <change_detection.rst>
    
 
 Indices and tables
