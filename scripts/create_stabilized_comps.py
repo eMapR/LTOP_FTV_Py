@@ -239,4 +239,4 @@ if __name__ == '__main__':
           [104.87641923611103, 12.378508282969571]]])
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-        main(aoi,cfg,startYear=2016,endYear=2020)
+        main(aoi,cfg,startYear=2007,endYear=2015)
