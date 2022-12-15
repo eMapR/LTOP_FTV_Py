@@ -47,16 +47,28 @@ def build_image_collection(*args):
         comps = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear'])
         tc = ltgee.transformSRcollection(comps, ['tcb','tcg','tcw'])
         #TODO this could probably be wrapped into a list comprehension for brevity 
-        #now make an image out of a start, mid and end point of the time series 
-        image21 = tc.filter(ee.Filter.eq('system:index','2021')).first()
-        image18 = tc.filter(ee.Filter.eq('system:index','2018')).first()
-        image14 = tc.filter(ee.Filter.eq('system:index','2014')).first()
-        image10 = tc.filter(ee.Filter.eq('system:index','2010')).first()
-        image06 = tc.filter(ee.Filter.eq('system:index','2006')).first()
-        image02 = tc.filter(ee.Filter.eq('system:index','2002')).first()
-        image98 = tc.filter(ee.Filter.eq('system:index','1998')).first()
-        image94 = tc.filter(ee.Filter.eq('system:index','1994')).first()
+        #now make a condensed time series of images 
+        #12/15/22 update- try using difference images instead of just raw images 
         image90 = tc.filter(ee.Filter.eq('system:index','1990')).first()
+        image94 = tc.filter(ee.Filter.eq('system:index','1994')).first()
+        image98 = tc.filter(ee.Filter.eq('system:index','1998')).first()
+        image02 = tc.filter(ee.Filter.eq('system:index','2002')).first()
+        image06 = tc.filter(ee.Filter.eq('system:index','2006')).first()
+        image10 = tc.filter(ee.Filter.eq('system:index','2010')).first()
+        image14 = tc.filter(ee.Filter.eq('system:index','2014')).first()
+        image18 = tc.filter(ee.Filter.eq('system:index','2018')).first()
+        image21 = tc.filter(ee.Filter.eq('system:index','2021')).first()
+        
+        #now make difference images
+        image94 = image94.subtract(image90)
+        image98 = image98.subtract(image90)
+        image02 = image02.subtract(image90)
+        image06 = image06.subtract(image90)
+        image10 = image10.subtract(image90)
+        image14 = image14.subtract(image90)
+        image18 = image18.subtract(image90)
+        image21 = image21.subtract(image90)
+
         LandsatComposites = image90.addBands(image94).addBands(image98).addBands(image02).addBands(image06).addBands(image10).addBands(image14).addBands(image18).addBands(image21)
     return LandsatComposites
 
@@ -74,18 +86,18 @@ def generate_snic_outputs(*args):
 
     task = ee.batch.Export.table.toAsset(
                 collection= snic_output01.get(0),
-                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
-                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
+                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
+                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
                 
     )
 
     task2 = ee.batch.Export.image.toAsset(
                 image= ee.Image(snic_output01.get(1)),
-                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
-                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
+                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
+                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
                 region= args["aoi"],
                 scale=30,
-                maxPixels=10000000000000
+                maxPixels=1e13
     )
 
     task.start()

@@ -111,7 +111,7 @@ def trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands):
     '''
     Train a GEE kmeans model, using the SNIC outputs as inputs. 
     '''
-    training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters).train(
+    training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters, init=True).train(
         features= snic_cluster_pts,
         #realanames= ["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"],
         inputProperties= bands#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean", "B7_2_mean"],

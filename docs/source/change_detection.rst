@@ -16,8 +16,10 @@ Identifying change based on existing LT modules
 
 Existing code has been used to identify different types of change based on LT temporal segmentation, but focuses on single event identification (i.e., greatest, least disturbance) 
 for more information see the `existing description <https://emapr.github.io/LT-GEE/api.html#getchangemap>`_ on using this code. The general output of the LTOP workflow does not lend 
-itself to applying this code directly so we reformat those outputs to emulate the structure of the general LT outputs (4xn array image). Note that as of 12/12/2022 this only exists in 
-JS and has not been translated into Python. 
+itself to applying this code directly so we reformat those outputs to emulate the structure of the general LT outputs (4xn array image). Note that as of 12/12/2022 the code to generate 
+a pseudo LT 4xn output array exists in python and is included in the `ltop.py modules <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_. However, the code from LandTrendr.js
+modules for creating change maps (getChangeMap linked above) has not been translated from JavaScript to python. When that is translated and included in the `LandTrendr.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py>`_
+then one could do all of this in python. Until then, only the construction of the pseudo 4xn array is available in Python. 
 
 1. Dependencies: `modules <https://github.com/eMapR/SERVIR_stabilization/blob/main/scripts/GEE_scripts/temp_stab_modules.js>`_
 
@@ -27,13 +29,12 @@ JS and has not been translated into Python.
 3. Copy and paste script text into GEE JavaScript API or you can access the scripts of the same name in the `GEE repo <https://code.earthengine.google.com/?accept_repo=users/ak_glaciers/adpc_servir_LTOP>`_
 
 4. This script requires some of the outputs of the LTOP workflow. There is additional description of these inputs in the script header and in other documentation in this repo. Change these 
-to reflect the LTOP run you are interested in using in lines 77-81 in the JS version. 
-
+to reflect the LTOP run you are interested in using in lines 77-81 in the JS version of the change detection code linked above. Note that these will all be produced in the assetsChild directory you 
+specified in the config.yml before running LTOP.  
 
     a. the kmeans cluster_image which is one of the outputs of the 02 step
-    b. the final output of the LTOP workflow (output of 05 step)
-    c. The csv that is is used as input to the 05 step with selected versions of LT 
-
+    b. the final output breakpoints of the LTOP workflow (output of 05 step)
+    c. The asset that is is used as input to the 05 step with selected versions of LT 
 
 5. Decide if you want to visualize and/or export. Note that unless you are running quite a small area you likely want to export something. That is the default option.  
 
