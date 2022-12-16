@@ -61,13 +61,13 @@ def build_image_collection(*args):
         
         #now make difference images
         image94 = image94.subtract(image90)
-        image98 = image98.subtract(image90)
-        image02 = image02.subtract(image90)
-        image06 = image06.subtract(image90)
-        image10 = image10.subtract(image90)
-        image14 = image14.subtract(image90)
-        image18 = image18.subtract(image90)
-        image21 = image21.subtract(image90)
+        image98 = image98.subtract(image94)
+        image02 = image02.subtract(image98)
+        image06 = image06.subtract(image02)
+        image10 = image10.subtract(image06)
+        image14 = image14.subtract(image10)
+        image18 = image18.subtract(image14)
+        image21 = image21.subtract(image18)
 
         LandsatComposites = image90.addBands(image94).addBands(image98).addBands(image02).addBands(image06).addBands(image10).addBands(image14).addBands(image18).addBands(image21)
     return LandsatComposites
@@ -86,15 +86,15 @@ def generate_snic_outputs(*args):
 
     task = ee.batch.Export.table.toAsset(
                 collection= snic_output01.get(0),
-                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
-                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
+                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs_spacing',
+                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_yearly_diff',
                 
     )
 
     task2 = ee.batch.Export.image.toAsset(
                 image= ee.Image(snic_output01.get(1)),
-                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
-                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs',
+                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs_spacing',
+                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_yearly_diff',
                 region= args["aoi"],
                 scale=30,
                 maxPixels=1e13

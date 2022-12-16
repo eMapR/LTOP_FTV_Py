@@ -18,7 +18,7 @@ through parts of a featureCollection. In this instance, you run each chunk all t
 if __name__ == '__main__':
 
     #example for single run (one ROI)
-    print('running a single')
+    print('running a single area')
     aoi = ee.FeatureCollection("USDOS/LSIB/2017").filter(ee.Filter.eq('COUNTRY_NA','Cambodia')).geometry()
     # # aoi = ee.Geometry.Polygon(
     # #     [[[105.21924736250195, 14.414700359899358],

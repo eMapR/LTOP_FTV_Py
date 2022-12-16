@@ -75,6 +75,7 @@ def parse_params(aoi,*args):
     args.update({'selectedLTparams':ee.FeatureCollection(args['assetsRoot']+args['assetsChild']+f'/LTOP_{args["place"]}_selected_LT_params_tc')})
     args.update({'njobs':int(args['njobs'])})
     args.update({'cloud_bucket':str(args['cloud_bucket'])})
+    args.update({'credentials':str(args['credentials'])})
     # only needed for medoid composites
     args.update({'startDate':str(args['startDate'])})
     args.update({'endDate':str(args['endDate'])})
@@ -278,7 +279,7 @@ class RunLTOPFull(object):
                     #trigger the download of the csv files from GCS bucket   
                     #assumes we've generated the files and the dest local directory exists
                     print('Downloading csv files from GCS')
-                    ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
+                    ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns,credentials = self.args['credentials'])
                     return True 
                     # break
                 else: 
@@ -295,7 +296,7 @@ class RunLTOPFull(object):
                 return True 
             else: 
                 print('The csvs of params have not been downloaded, downloading...')
-                ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
+                ltop.download_multiple_from_bucket(self.args['cloud_bucket'], names, out_fns, credentials = self.args['credentials'])
                 return True 
         
     def run_check_param_selection(self):
