@@ -26,7 +26,7 @@ def generate_kmeans_image(*args):
     #SNIC inputs this should also be changed. TODO this could also be done automatically. 
     kmeans_output02_1 = ltop.kmeans02_1(ee.FeatureCollection(
         args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_pts_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])+'_prob_func_diff_imgs').filter(ee.Filter.neq('TCB_mean', None)),
-        ee.Image(args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_imagery_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])+'_prob_func_diff_imgs'),
+        ee.Image(args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_imagery_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])),
         args["aoi"],
         args["minClusters"],
         args["maxClusters"]
@@ -35,8 +35,8 @@ def generate_kmeans_image(*args):
     # export the kmeans output image to an asset
     task = ee.batch.Export.image.toAsset(
         image= kmeans_output02_1,  # kmeans_output02.get(0),
-        description= "LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]) + '_diff_imgs',
-        assetId= args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]) + '_diff_imgs',
+        description= "LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]),
+        assetId= args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]),
         region= args["aoi"],
         scale= 30,
         maxPixels= 1e13

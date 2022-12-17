@@ -35,3 +35,17 @@ This should be stored in the same directory as the scripts you are running. This
 4. Create a GCS `cloud bucket <https://cloud.google.com/storage/docs/creating-buckets>`_. Note that if you have no projects you should create a new `project <https://cloud.google.com/resource-manager/docs/creating-managing-projects>`_ to hold the bucket. 
 
 5. Change the params to reflect your cloud bucket name. 
+
+Potential gotchas
+-----------------
+
+* The code implements the LandTrendr.py/LandTrendr.js indexFlipper function in step 04 before running LT on the abstract image points. This is done automatically when running 
+medoid composites and using LandTrendr.js to build those but has to be done separately for SERVIR composites.    
+
+* If you are going to try and run this using the legacy GEE assets structure (i.e. not the Google Cloud projects architecture) it may not work. This has not been temp_stab_modules    
+
+* It is possible you have credentials that were created in a slightly different way that do not work for Google Cloud. Consult the instructions above and hopefully that will help.
+
+
+
+

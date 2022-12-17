@@ -86,15 +86,15 @@ def generate_snic_outputs(*args):
 
     task = ee.batch.Export.table.toAsset(
                 collection= snic_output01.get(0),
-                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs_spacing',
-                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_yearly_diff',
+                description="LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
+                assetId= args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_pts_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
                 
     )
 
     task2 = ee.batch.Export.image.toAsset(
                 image= ee.Image(snic_output01.get(1)),
-                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_prob_func_diff_imgs_spacing',
-                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"])+'_yearly_diff',
+                description="LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
+                assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
                 region= args["aoi"],
                 scale=30,
                 maxPixels=1e13

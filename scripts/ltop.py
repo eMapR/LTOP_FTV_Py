@@ -14,7 +14,7 @@ import LandTrendr as ltgee
 from google.cloud import storage
 import subprocess
 
-version = '0.1.2'
+version = '0.1.3'
 print('LTOP version: ', version)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -148,29 +148,6 @@ def selectKmeansPts(img, aoi):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 03 abstractSampler # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-
-#TODO note that this could probably be changed to the LandTrendr.py version. It was taken from there
-# def computeIdnices_helper(img):
-#     '''
-#     Calculate Tasseled Cap Brightness, Greenness, Wetness
-#     '''
-#     bands = img.select(['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
-
-#     coefficients = ee.Array([
-#         [0.2043, 0.4158, 0.5524, 0.5741, 0.3124, 0.2303],
-#         [-0.1603, -0.2819, -0.4934, 0.7940, -0.0002, -0.1446],
-#         [0.0315, 0.2021, 0.3102, 0.1594, -0.6806, -0.6109],
-#     ])
-
-#     components = ee.Image(coefficients).matrixMultiply(bands.toArray().toArray(1)).arrayProject([0]).arrayFlatten([['TCB', 'TCG', 'TCW']]).toFloat()
-
-#     img = img.addBands(components)
-
-#     # Compute NDVI and NBR
-#     img = img.addBands(img.normalizedDifference(['B4', 'B3']).toFloat().rename(['NDVI']).multiply(1000))
-#     img = img.addBands(img.normalizedDifference(['B4', 'B7']).toFloat().rename(['NBR']).multiply(1000))
-
-#     return img.select(['NBR', 'TCW', 'TCG', 'NDVI', 'B5']).toFloat()
 
 def computeIndices(ic, indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']):
     #TODO not 100% sure this is formatted correctly 
@@ -441,23 +418,6 @@ def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     # place each array into a image stack one array per band
     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
 
-    # #add an aoi for testing
-    # aoi = ee.Geometry.Polygon(
-    #     [[[104.35274437489917, 13.834579257069725],
-    #       [104.35274437489917, 13.747888760904075],
-    #       [104.62053612294605, 13.747888760904075],
-    #       [104.62053612294605, 13.834579257069725]]])
-
-    # task = ee.batch.Export.image.toAsset(
-    #         image= lt_images,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
-    #         description= indexName+'_testing_lt_images',
-    #         assetId='projects/ee-ltop-py/assets/ltop_image_testing/'+indexName+'_testing_lt_images',
-    #         region = aoi,
-    #         scale=30
-            
-    #     )
-
-    # task.start()
     # extract a LandTrendr pixel time series at a point
     getpin2 = getPoint2(id_points, lt_images,20)  #scale changed from 20 to 30 BRP add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
 
