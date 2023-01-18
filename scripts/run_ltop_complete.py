@@ -101,7 +101,8 @@ class RunLTOPFull(object):
         # wd = self.gee_cwd
         folders = ee.data.listAssets({'parent':self.args['assetsRoot']})
         folders = [i for i in folders['assets'] if i['type'] == 'FOLDER']
-        target = [i for i in folders if i['name'] == self.gee_cwd]
+        #If your assetsRoot is earthengine project asset type (not cloud project), change name to id in here. 
+        target = [i for i in folders if i['name'] == self.gee_cwd] 
         if len(target) == 0: 
             print(f'The working directory {self.gee_cwd} does not exist, creating...')
             ee.data.createAsset({'type':'FOLDER'},self.gee_cwd)
@@ -126,6 +127,7 @@ class RunLTOPFull(object):
         #the output is like: {'assets':[{dict with metadata on each asset}]}
         assets = ee.data.listAssets({'parent':self.gee_cwd})
         #subset the assets to just their names that contain 'synthetic'
+        #If your assetsRoot is earthengine project asset type (not cloud project), change name to id in here.
         assets = [a['name'] for a in assets['assets']] #if 'synthetic' in a['name']]
         #now check if all of our years are there- returns True if yes, False if no
         results = all(e in assets for e in assets_list)
