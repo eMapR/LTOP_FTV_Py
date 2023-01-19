@@ -39,7 +39,7 @@ def generate_kmeans_image(*args):
         assetId= args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]),
         region= args["aoi"],
         scale= 30,
-        maxPixels= 10000000000000
+        maxPixels= 1e13
     )
     task.start()
     return task.status()
