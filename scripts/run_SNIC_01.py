@@ -85,7 +85,7 @@ def generate_snic_outputs(*args):
                 assetId=args["assetsRoot"]+args["assetsChild"]+"/LTOP_SNIC_imagery_"+args["place"]+"_c2_"+str(args["randomPts"])+"_pts_"+str(args["startYear"]),
                 region= args["aoi"],
                 scale=30,
-                maxPixels=10000000000000
+                maxPixels=1e13
     )
 
     task.start()
