@@ -19,13 +19,8 @@ if __name__ == '__main__':
 
     #example for single run (one ROI)
     print('running a single')
-    aoi = ee.FeatureCollection("USDOS/LSIB/2017").filter(ee.Filter.eq('COUNTRY_NA','Cambodia')).geometry()
-    # # aoi = ee.Geometry.Polygon(
-    # #     [[[105.21924736250195, 14.414700359899358],
-    # #       [105.21924736250195, 12.212492266993609],
-    # #       [107.62525322187695, 12.212492266993609],
-    # #       [107.62525322187695, 14.414700359899358]]])
-
+    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
+   
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
         cfg = parse_params(aoi,cfg) #TODO decide what to do with the AOI

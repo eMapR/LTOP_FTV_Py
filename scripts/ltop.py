@@ -1,7 +1,7 @@
 ########################################################################################################
 # LandTrendr Optimization (LTOP) library
 ########################################################################################################
-#date: 2022 - 07 - 19
+#date: 2023 - 02 - 19
 # author: Peter Clary | clarype @ oregonstate.edu
 # Robert Kennedy | rkennedy @ coas.oregonstate.edu
 # Ben Roberts - Pierel | robertsb @ oregonstate.edu
@@ -14,7 +14,7 @@ import LandTrendr as ltgee
 from google.cloud import storage
 import subprocess
 
-version = '0.1.2'
+version = '0.1.3'
 print('LTOP version: ', version)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -36,7 +36,7 @@ def buildSERVIRcompsIC(startYear, endYear):
     yr_images = []
     yearlist = list(range(startYear,endYear+1))
     for y in yearlist:
-        im = ee.Image("projects/servir-mekong/composites/" + str(y))
+        im = ee.Image("projects/servir-mekong/composites/" + str(y)).toInt32()
         yr_images.append(im)
 
     servir_ic = ee.ImageCollection.fromImages(yr_images)
@@ -49,84 +49,37 @@ def buildSERVIRcompsIC(startYear, endYear):
     # the rest of the scripts will be easier if we just rename the bands of these composites to match what comes out of the LT modules
     # note that if using the SERVIR composites the default will be to get the first six bands without the percentile bands
     comps = servir_ic.map(map_servir_ic)
-    return comps
+    return comps  #servir_ic
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# # # # # # # # # # # # # # # # 01 SNIC # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 
-# run SNIC and return the imagery
 
-def runSNIC(composites, aoi, patchSize):
-    '''
-    Run the GEE SNIC algorithm to 'patchify' a landscape.
-    '''
-    snicImagery = ee.Algorithms.Image.Segmentation.SNIC(image= composites,
-                                                        size= patchSize, 
-                                                        compactness= 1, ).clip(aoi)
-    return snicImagery
-
-# now split the SNIC bands
-
-def getSNICmeanBands(snic_output):
-    #TODO there is something going wrong here that is replicating bands and we're getting more than we should 
-    return snic_output.select(snic_output.bandNames())#["seeds", "clusters", "B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean","B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean","B5_2_mean", "B7_2_mean"])
-
-def getSNICseedBands(snic_output):
-    return snic_output.select(['seeds'])
-
-# select a singlepixel from each patch, convertto int, clip and reproject.This last step is tomimic
-# the outputs of QGIS
-
-def SNICmeansImg(snic_output, aoi):
-    return getSNICseedBands(snic_output).multiply(getSNICmeanBands(snic_output))
-
-def samplePts_helper(pt,img,abstract):
-    value = img.reduceRegion(
-        reducer=ee.Reducer.first(),
-        geometry=pt.geometry(),
-        scale=30
-    )
-    if not abstract: 
-        return ee.Feature(pt.geometry(), value)
-    else: 
-        return ee.Feature(pt.geometry(), value).set('cluster_id',pt.get('cluster'))
-
-def samplePts(pts, img, abstract=False):
-    """
-    Zonal statistics for points 
-    """
-    output = pts.map(lambda x: samplePts_helper(x,img,abstract))
-    return ee.FeatureCollection(output)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 02 kMeans # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# the first handful of functions that make composites and run SNIC in the original workflow are just recycled from above.We only add the kmeans here
+# the first handful of functions that make composites and run the kmeans here
 
 # train a kmeans model
 
-def trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands):
+def trainKmeans(random_cluster_pts, min_clusters, max_clusters,bands):
     '''
-    Train a GEE kmeans model, using the SNIC outputs as inputs. 
+    Train a GEE kmeans model, using trandom points generated as inputs. 
     '''
-    training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters).train(
-        features= snic_cluster_pts,
-        #realanames= ["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"],
-        inputProperties= bands#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean", "B7_2_mean"],
-        #inputProperties=["seed_3", "seed_4", "seed_5", "seed_6", "seed_7", "seed_8", "seed_9", "seed_10", "seed_11", "seed_12", "seed_13", "seed_14", "seed_15", "seed_16", "seed_17","seed_18", "seed_19", "seed_20"]
+    training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters, init=True, distanceFunction= "Manhattan", maxIterations=30).train(
+        features= random_cluster_pts,
+        inputProperties= bands 
     )
     return training
 
-def runKmeans(snic_cluster_pts, min_clusters, max_clusters, aoi, snic_output,bands):
+def runKmeans(random_cluster_pts, min_clusters, max_clusters, aoi, org_composite,bands):
     '''
-    run thekmeans model - note that the inputs are being created in the snic section in the workflow document
+    run thekmeans model 
     '''
     # train a kmeans model
-    trainedModel = trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands)
+    trainedModel = trainKmeans(random_cluster_pts, min_clusters, max_clusters,bands)
     # call the trainedkmeans model
-    clusterSeed = snic_output.cluster(trainedModel) #.clip(aoi)changed 8 / 23 / 22
+    clusterSeed = org_composite.cluster(trainedModel) 
     return clusterSeed
 
 
@@ -144,33 +97,28 @@ def selectKmeansPts(img, aoi):
         geometries= True
     )
     return kmeans_points
+    
+def samplePts_helper(pt,img,abstract):
+    value = img.reduceRegion(
+    reducer=ee.Reducer.first(),
+    geometry=pt.geometry(),
+    scale=30
+    )
+    if not abstract: 
+        return ee.Feature(pt.geometry(), value)
+    else: 
+        return ee.Feature(pt.geometry(), value).set('cluster_id',pt.get('cluster'))
+
+def samplePts(pts, img, abstract=False):
+    """
+    Zonal statistics for points 
+    """
+    output = pts.map(lambda x: samplePts_helper(x,img,abstract))
+    return ee.FeatureCollection(output)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 03 abstractSampler # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-
-#TODO note that this could probably be changed to the LandTrendr.py version. It was taken from there
-# def computeIdnices_helper(img):
-#     '''
-#     Calculate Tasseled Cap Brightness, Greenness, Wetness
-#     '''
-#     bands = img.select(['B1', 'B2', 'B3', 'B4', 'B5', 'B7'])
-
-#     coefficients = ee.Array([
-#         [0.2043, 0.4158, 0.5524, 0.5741, 0.3124, 0.2303],
-#         [-0.1603, -0.2819, -0.4934, 0.7940, -0.0002, -0.1446],
-#         [0.0315, 0.2021, 0.3102, 0.1594, -0.6806, -0.6109],
-#     ])
-
-#     components = ee.Image(coefficients).matrixMultiply(bands.toArray().toArray(1)).arrayProject([0]).arrayFlatten([['TCB', 'TCG', 'TCW']]).toFloat()
-
-#     img = img.addBands(components)
-
-#     # Compute NDVI and NBR
-#     img = img.addBands(img.normalizedDifference(['B4', 'B3']).toFloat().rename(['NDVI']).multiply(1000))
-#     img = img.addBands(img.normalizedDifference(['B4', 'B7']).toFloat().rename(['NBR']).multiply(1000))
-
-#     return img.select(['NBR', 'TCW', 'TCG', 'NDVI', 'B5']).toFloat()
 
 def computeIndices(ic, indices = ['NBR', 'NDVI', 'TCG', 'TCW', 'B5']):
     #TODO not 100% sure this is formatted correctly 
@@ -441,23 +389,6 @@ def runLTversionsHelper(param,indexName,id_points,startYear,endYear):
     # place each array into a image stack one array per band
     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
 
-    # #add an aoi for testing
-    # aoi = ee.Geometry.Polygon(
-    #     [[[104.35274437489917, 13.834579257069725],
-    #       [104.35274437489917, 13.747888760904075],
-    #       [104.62053612294605, 13.747888760904075],
-    #       [104.62053612294605, 13.834579257069725]]])
-
-    # task = ee.batch.Export.image.toAsset(
-    #         image= lt_images,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
-    #         description= indexName+'_testing_lt_images',
-    #         assetId='projects/ee-ltop-py/assets/ltop_image_testing/'+indexName+'_testing_lt_images',
-    #         region = aoi,
-    #         scale=30
-            
-    #     )
-
-    # task.start()
     # extract a LandTrendr pixel time series at a point
     getpin2 = getPoint2(id_points, lt_images,20)  #scale changed from 20 to 30 BRP add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
 
@@ -583,7 +514,7 @@ def printer_helper(feat,ic,cluster_image,aoi):
     # return LandTrendr image collection run to list.
     return lt
 
-# Run the versions of LT we selected, uses masks to run the correct version for the SNIC patches in a given kmeans cluster
+# Run the versions of LT we selected, uses masks to run the correct version in a given kmeans cluster
 # input args are the index tables above and the associated imageCollection
 def printerFunc(fc, ic, cluster_image, aoi):
 
@@ -853,54 +784,20 @@ def convertLTfitToLTprem(lt_fit_output,export_band,startYear,endYear):
 
     return lt_out 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# # # # # # # # # # # # # # # # Invoking functions # # # # # # # # # # # # # # # # # # # # # # # # /
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-# now set up functions for calling each step.These are like wrappers for the above functions and are called externally.
-# it may make more sense to just put the things from the five scripts into this section so we can ditch those 
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # 01 SNIC # # # # # # /
-# # # # # # # # # # # # # # # # # # # # # # # # # # #
-def snic01(snic_composites, aoi, random_pts, patch_size):
-    # run the SNIC algorithm
-    SNICoutput = runSNIC(snic_composites, aoi, patch_size)
-
-    SNICpixels = SNICmeansImg(SNICoutput, aoi)
-
-    # these were previously the two things that were exported to drive
-
-    SNICimagery = SNICoutput.toInt32() #.reproject({crs: 'EPSG:4326', scale: 30}) # previously snicImagery
-
-    SNICmeans = SNICpixels.toInt32().clip(aoi) # previously SNIC_means_image
-
-    #create some random points
-    snicPts = ee.FeatureCollection.randomPoints(
-        region= aoi,
-        points= random_pts,
-        seed= 10
-    )
-    # do the sampling
-    snicPts = samplePts(snicPts, SNICimagery)
-
-    return ee.List([snicPts, SNICimagery])
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 02 kMeans # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-def kmeans02_1(snicPts, SNICimagery, aoi, min_clusters, max_clusters):
-    # take the snic outputs from the previous steps and thentrain and run a kmeans model
-    snic_bands = SNICimagery.bandNames()
-    snic_bands = snic_bands.remove('clusters')
-    snic_bands = snic_bands.remove('seeds')
-    snicKmeansImagery = ee.Image(SNICimagery).select(snic_bands)#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean","B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"])
+def kmeans02_1(randPts, servimagery, aoi, min_clusters, max_clusters):
+    # take the inputs and train and run a kmeans model
+    serv_bands = servimagery.bandNames()
+    print(serv_bands.getInfo())
+    servKmeansImagery = ee.Image(servimagery) 
 
-    kMeansImagery = runKmeans(snicPts, min_clusters, max_clusters, aoi, snicKmeansImagery,snic_bands)
+    kMeansImagery = runKmeans(randPts, min_clusters, max_clusters, aoi, servKmeansImagery,serv_bands)
 
-    # kMeansPoints = selectKmeansPts(kMeansImagery, aoi)
     return kMeansImagery
-    # return ee.List([kMeansImagery, kMeansPoints])
 
 
 def kmeans02_2(kmeans_imagery, aoi):

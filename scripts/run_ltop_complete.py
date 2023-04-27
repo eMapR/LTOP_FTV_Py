@@ -2,7 +2,6 @@ import ee
 import params
 import time 
 import ltop 
-import run_SNIC_01 as runSNIC
 import run_kMeans_02_1 as kmeans_1
 import run_kMeans_02_2 as kmeans_2
 import abstract_sampling_03 as ab_img
@@ -90,6 +89,7 @@ class RunLTOPFull(object):
     
     def __init__(self,*args,sleep_time=30): 
         self.args = args[0] #call args as params.params externally
+        print("1st")
         self.sleep_time = sleep_time
         self.gee_cwd = self.args['assetsRoot']+self.args['assetsChild']
     
@@ -98,11 +98,10 @@ class RunLTOPFull(object):
         Look in the assets folders to see if the intended directory is there. 
         If its not then make it. 
         '''
-        # wd = self.gee_cwd
+        wd = self.gee_cwd
         folders = ee.data.listAssets({'parent':self.args['assetsRoot']})
         folders = [i for i in folders['assets'] if i['type'] == 'FOLDER']
-        #If your assetsRoot is earthengine project asset type (not cloud project), change name to id in here. 
-        target = [i for i in folders if i['name'] == self.gee_cwd] 
+        target = [i for i in folders if i['id'] == self.gee_cwd]
         if len(target) == 0: 
             print(f'The working directory {self.gee_cwd} does not exist, creating...')
             ee.data.createAsset({'type':'FOLDER'},self.gee_cwd)
@@ -126,9 +125,9 @@ class RunLTOPFull(object):
         '''
         #the output is like: {'assets':[{dict with metadata on each asset}]}
         assets = ee.data.listAssets({'parent':self.gee_cwd})
+    
         #subset the assets to just their names that contain 'synthetic'
-        #If your assetsRoot is earthengine project asset type (not cloud project), change name to id in here.
-        assets = [a['name'] for a in assets['assets']] #if 'synthetic' in a['name']]
+        assets = [a['id'] for a in assets['assets']] #if 'synthetic' in a['name']]
         #now check if all of our years are there- returns True if yes, False if no
         results = all(e in assets for e in assets_list)
         if results: 
@@ -136,46 +135,12 @@ class RunLTOPFull(object):
         else: 
             return False 
 
-    def run_check_SNIC(self): 
-        """
-        Run the SNIC algorithm and then wait to make sure it works and things are run correctly before proceeding. 
-        """
-        #double check that the intended output GEE directory exists
-        self.check_for_wd()
-        #1. run SNIC
-        #first check if snic has already been run- there should be a better way to do this
-        snic_pts_path = self.gee_cwd+"/LTOP_SNIC_pts_"+self.args["place"]+"_c2_"+str(self.args["randomPts"])+"_pts_"+str(self.args["startYear"])
-        snic_img_path = self.gee_cwd+"/LTOP_SNIC_imagery_"+self.args["place"]+"_c2_"+str(self.args["randomPts"])+"_pts_"+str(self.args["startYear"])
-
-        proceed = self.check_assets_presence([snic_pts_path,snic_img_path])
-        #TODO this is currently an all or nothing thing, it will try to create both snic outputs if one is missing
-        if not proceed: 
-            print('SNIC assets do not yet exist, creating...')
-            status1,status2 = runSNIC.generate_snic_outputs(self.args)
-            while True: 
-                ts_1 = self.check_task_status(status1['id'])
-                ts_2 = self.check_task_status(status2['id'])
-                time.sleep(self.sleep_time)
-                if (ts_1 == 'COMPLETED') & (ts_2 == 'COMPLETED'): 
-                    print('The snic tasks are now complete')
-                    return True
-                    # break
-                elif (ts_1 == 'FAILED') | (ts_1 == 'CANCELLED'): 
-                    print('The snic points generation failed')
-                    return False
-                    # break
-                elif (ts_2 == 'FAILED') | (ts_2 == 'CANCELLED'): 
-                    print('The snic image generation failed')
-                    return False 
-                    # break
-        else: 
-            print('SNIC assets already exist or are running, proceeding...')
-            return True
+	
+    
     
     def run_check_kmeans(self):
-        """
-        Check if the SNIC outputs are done and then run kmeans, checking to see if those outputs are done for the next operation. 
-        """
+		
+        # Run kmeans,and then checking to see if those outputs are done for the next operation. 
         #now check kmeans 
         kmeans_img_path = self.args["assetsRoot"] +self.args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(self.args["randomPts"]) + "_pts_" + str(self.args["maxClusters"]) + "_max_" + str(self.args["minClusters"]) + "_min_clusters_" + self.args["place"] + "_c2_" + str(self.args["startYear"])
         kmeans_pts_path = self.gee_cwd+'/LTOP_KMEANS_stratified_points_'+str(self.args['maxClusters'])+'_max_'+str(self.args['minClusters'])+'_min_clusters_'+self.args['place']+'_c2_'+str(self.args['startYear'])
@@ -215,6 +180,7 @@ class RunLTOPFull(object):
         else: 
             print('The kmeans points have been generated, proceeding...')
             return True 
+ 
     
     def run_check_abstract_images(self): 
         """
@@ -397,12 +363,8 @@ class RunLTOPFull(object):
         """
         Master function for running the whole workflow. 
         """
-        snic = self.run_check_SNIC()
-        if snic: 
-            kmeans = self.run_check_kmeans()
-        else: 
-            print('SNIC broke')
-            return None
+        kmeans = self.run_check_kmeans()
+        
         if kmeans: 
             abs_imgs = self.run_check_abstract_images()
         else: 
@@ -428,3 +390,4 @@ class RunLTOPFull(object):
         else: 
             print('The generation of breakpoints broke')
             return None 
+		

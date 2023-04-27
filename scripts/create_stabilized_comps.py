@@ -16,7 +16,7 @@
 # 4. dest_folder - this should be created and set by the user. This will be where the stabilized composites end up. Do not add a slash, its done for you below
 import ee  
 import pandas as pd 
-import ltop 
+import ltop
 import LandTrendr as ltgee
 import yaml 
 
@@ -119,7 +119,8 @@ def rebuild_image_collection(num_bands,FTVstacks):
     collections = ee.List(collections).slice(1)
     for i in range(lower): 
         #use the combine function to stick each band/time series onto the previous 
-        output = output.combine(ee.ImageCollection(collections.get(i)))#.get(indices[i]))) 
+        output = output.combine(ee.ImageCollection(collections.get(i)))#.get(indices[i])))
+        
 
     #now remove the year to mimic the band naming structure of the servir composites
     output = output.map(output_naming_helper)
@@ -158,12 +159,13 @@ def export_imgs(output_collection,aoi,*args,startYear=None,endYear=None):
     startYear,endYear = check_year_range(startYear,endYear,args)
     for i in range(startYear,endYear+1): 
         out_img = output_collection.filter(ee.Filter.eq('year',i)).first().clip(aoi)
+        print(out_img.bandNames().getInfo())
         yr_str = ee.Number(i).format().getInfo() 
     
         task = ee.batch.Export.image.toAsset(
             image = out_img, 
             description = "servir_"+yr_str+"_stabilized_"+args['place'], 
-            assetId = args['assetsRoot']+args['assetsChild']+"/servir_"+yr_str+"_stabilized_"+args['place']+'_cardamon_mtns', 
+            assetId = args['assetsRoot']+"stabilized_composites"+"/"+yr_str, 
             region = aoi, 
             scale = 30, 
             maxPixels = 1e13 
@@ -220,23 +222,14 @@ def main(aoi,*args,startYear=None,endYear=None):
     lt_fit_outputs = prep_inputs(ltop_output,table,servir_ic,cluster_image,band_names,min_obvs=11)
     new_collection = match_LT_to_servir(band_names,lt_fit_outputs,args)
     export_collection = rebuild_image_collection(num_bands,new_collection)
-    #should return None 
+    
+        #should return None 
     output = export_imgs(export_collection,aoi,args,startYear=startYear,endYear=endYear)
 
 if __name__ == '__main__': 
-    # aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry()
-    #aoi for original testing reservoir
-    # aoi = ee.Geometry.Polygon(
-    #     [[[105.21924736250195, 14.414700359899358],
-    #       [105.21924736250195, 12.212492266993609],
-    #       [107.62525322187695, 12.212492266993609],
-    #       [107.62525322187695, 14.414700359899358]]])
-    #cardamon mountains
-    aoi = ee.Geometry.Polygon(
-        [[[102.68464677517353, 12.378508282969571],
-          [102.68464677517353, 11.028422191940491],
-          [104.87641923611103, 11.028422191940491],
-          [104.87641923611103, 12.378508282969571]]])
+    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
+    
+    
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-        main(aoi,cfg,startYear=2007,endYear=2015)
+        main(aoi,cfg,startYear=1990,endYear=2022)

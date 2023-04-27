@@ -1,19 +1,19 @@
 run_times: 'single'
 place: 'Cambodia_200'
 startYear: 1990
-endYear: 2021
+endYear: 2022
 seedSpacing: 10
 randomPts: 20000
 image_source: 'servir'
-assetsRoot: 'projects/ee-ltop-py/assets/'
-assetsChild: 'LTOP_py_Cambodia_200'
+assetsRoot: 'projects/servir-mekong/'
+assetsChild: 'LTOP_LMK'
 aoi: 'None'    
 maxClusters: 200
 minClusters: 200
-param_scoring_inputs: "/vol/v1/proj/LTOP_FTV_Py/"
-outfile: "/vol/v1/proj/LTOP_FTV_Py/selected_lt_params/"
+param_scoring_inputs: "/home/ubuntu/LTOP_FTV_Py/"
+outfile: "/home/ubuntu/LTOP_FTV_Py/selected_lt_params_LMK/"
 njobs: 8
-cloud_bucket: "ltop_assets_storage"
+cloud_bucket: "ltop_bucket"
 testing: "false"
     
 # only needed for medoid composites
