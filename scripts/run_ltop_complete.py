@@ -78,6 +78,7 @@ def parse_params(aoi,*args):
     args.update({'startDate':str(args['startDate'])})
     args.update({'endDate':str(args['endDate'])})
     args.update({'masked':list(args['masked'])})
+    print(args)
     return args
 
 class RunLTOPFull(object): 
