@@ -227,8 +227,8 @@ def main(aoi,*args,startYear=None,endYear=None):
     output = export_imgs(export_collection,aoi,args,startYear=startYear,endYear=endYear)
 
 if __name__ == '__main__': 
-    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
-    
+    #aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
+    aoi = ee.FeatureCollection("users/clarype/cambodia").geometry()    
     
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
