@@ -19,8 +19,8 @@ if __name__ == '__main__':
 
     #example for single run (one ROI)
     print('running a single')
-    aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
-   
+    #aoi = ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasins_10k").geometry()
+    aoi = ee.FeatureCollection("users/clarype/cambodia").geometry()   
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
         cfg = parse_params(aoi,cfg) #TODO decide what to do with the AOI
