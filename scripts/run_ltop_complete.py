@@ -48,6 +48,7 @@ def parse_params(aoi,*args):
     Helper function to change the formatting of inputs from the params file to make them the correct dtype/object for running LTOP. Takes a yml file?
     '''
     args = args[0]
+    print(args)
     #first deal with things that change when we run multiple geometries
     args.update({'place':str(args['place'])})
 
@@ -78,6 +79,7 @@ def parse_params(aoi,*args):
     args.update({'startDate':str(args['startDate'])})
     args.update({'endDate':str(args['endDate'])})
     args.update({'masked':list(args['masked'])})
+    args.update({'aoi':list(args['aoi'])})
     print(args)
     return args
 
