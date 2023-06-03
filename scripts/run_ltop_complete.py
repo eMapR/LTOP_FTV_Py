@@ -79,7 +79,7 @@ def parse_params(aoi,*args):
     args.update({'startDate':str(args['startDate'])})
     args.update({'endDate':str(args['endDate'])})
     args.update({'masked':list(args['masked'])})
-    args.update({'aoi':list(args['aoi'])})
+    #args.update({'aoi':str(args['aoi'])})
     print(args)
     return args
 
